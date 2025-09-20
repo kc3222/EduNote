@@ -1,0 +1,11 @@
+/* Full-height app + no default margins/padding */
+html, body, #root { height: 100%; }
+body { margin: 0; }
+
+#root {
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  text-align: initial;
+}
