@@ -7,3 +7,4 @@
 *.pywz
 *.pyzw
 *.pyz
+.env
