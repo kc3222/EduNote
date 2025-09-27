@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { login, me, logout } from "./api";
 
-export default function Login() {
+export default function Login({ onLogin }) {
   const [email, setEmail] = useState("demo@user.com");
   const [password, setPassword] = useState("password123");
   const [user, setUser] = useState(null);
@@ -13,6 +13,10 @@ export default function Login() {
       try {
         const userData = await me();
         setUser(userData);
+        // If user is already logged in, call onLogin
+        if (userData && onLogin) {
+          onLogin(userData);
+        }
       } catch (error) {
         // If me() fails, user is not logged in
         setUser(null);
@@ -20,7 +24,7 @@ export default function Login() {
         setLoading(false); // Always set loading to false
       }
     })();
-  }, []);
+  }, [onLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,6 +32,10 @@ export default function Login() {
     try {
       const u = await login(email, password);
       setUser(u);
+      // Call onLogin callback to notify parent component
+      if (onLogin) {
+        onLogin(u);
+      }
     } catch (e) {
       setErr(e.message);
     }
@@ -54,7 +62,7 @@ export default function Login() {
       <div style={styles.container}>
         <div style={styles.card}>
           <h2>Welcome</h2>
-          <p>You’re signed in as <b>{user.email}</b></p>
+          <p>You're signed in as <b>{user.email}</b></p>
           <button style={styles.button} onClick={handleLogout}>Log out</button>
         </div>
       </div>
