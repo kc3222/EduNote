@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen } from "lucide-react";
+import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle } from "lucide-react";
 
 export default function MainPage() {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -102,11 +102,10 @@ export default function MainPage() {
                 >
                   {rightOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </button>
-                <RailButton icon={<FileText className="h-4 w-4" />} label="Notes" showLabel={rightOpen} />
+                <RailButton icon={<FileText className="h-4 w-4" />} label="Summary" showLabel={rightOpen} />
                 <RailButton icon={<ListChecks className="h-4 w-4" />} label="Quizzes" showLabel={rightOpen} />
                 <RailButton icon={<Layers className="h-4 w-4" />} label="Flashcards" showLabel={rightOpen} />
-                <div className="mt-auto" />
-                <RailButton icon={<HelpCircle className="h-4 w-4" />} label="Help" showLabel={rightOpen} />
+                <RailButton icon={<MessageCircle className="h-4 w-4" />} label="Chat" showLabel={rightOpen} />
               </div>
             </div>
           </aside>
@@ -127,13 +126,6 @@ function TopBar() {
           </div>
           <span className="text-lg font-semibold text-slate-800">EduNote</span>
         </div>
-        
-        {/* Navigation tabs */}
-        <nav className="hidden md:flex items-center gap-2 rounded-full ring-1 ring-slate-200 bg-white/70 px-2 py-1 shadow-sm">
-          <NavTab icon={Edit3} label="Notes" active />
-          <NavTab icon={ListChecks} label="Quizzes" />
-          <NavTab icon={Layers} label="Flashcards" />
-        </nav>
         
         {/* Search bar centered */}
         <div className="flex-1 flex justify-center">
