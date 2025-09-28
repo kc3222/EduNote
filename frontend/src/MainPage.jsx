@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
+import EduNoteIcon from "./assets/EduNoteIcon.jpg";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -300,7 +301,7 @@ function TopBar({ user, onLogout }) {
         {/* Logo/Brand */}
         <div className="flex items-center gap-2 pr-1">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-white ring-1 ring-slate-200 shadow-sm text-slate-700">
-            <BookOpen className="h-5 w-5" />
+            <img src={EduNoteIcon} alt="EduNote" className="h-5 w-5 object-contain" />
           </div>
           <span className="text-lg font-semibold text-slate-800">EduNote</span>
         </div>
