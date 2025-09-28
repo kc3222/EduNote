@@ -1,12 +1,89 @@
 import React, { useState } from "react";
-import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle } from "lucide-react";
+import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [expandedLectures, setExpandedLectures] = useState({});
+  const [activeContent, setActiveContent] = useState(null);
 
-  const leftW = leftOpen ? "w-64" : "w-[64px]";
+  const leftW = leftOpen ? "w-80" : "w-[64px]";
   const rightW = rightOpen ? "w-[64px]" : "w-[24px]";
+
+  const lectures = [
+    {
+      id: 1,
+      title: "Lecture 1 - Introduction to Data Structures",
+      quizzes: [
+        { id: 1, title: "Quiz 1: Key Concepts" },
+        { id: 2, title: "Quiz 2: Terminology" }
+      ],
+      flashcards: [
+        { id: 1, title: "Flashcards: Definitions" }
+      ],
+      summary: [
+        { id: 1, title: "Summary: Key Concepts" }
+      ]
+    },
+    {
+      id: 2,
+      title: "Lecture 2 - Arrays and Linked Lists",
+      quizzes: [
+        { id: 1, title: "Quiz 1: Array Basics" },
+        { id: 2, title: "Quiz 2: Linked List Operations" },
+        { id: 3, title: "Quiz 3: Time Complexity" }
+      ],
+      flashcards: [
+        { id: 1, title: "Flashcards: Array Methods" },
+        { id: 2, title: "Flashcards: Linked List Terms" }
+      ],
+      summary: [
+        { id: 1, title: "Summary: Array Operations" }
+      ]
+    },
+    {
+      id: 3,
+      title: "Lecture 3 - Basic Concepts",
+      // No quizzes, flashcards, or summary - testing empty states
+      quizzes: [],
+      flashcards: null,
+      summary: undefined
+    },
+    {
+      id: 4,
+      title: "Lecture 4 - Advanced Topics",
+      quizzes: [
+        { id: 1, title: "Quiz 1: Advanced Concepts" }
+      ],
+      // No flashcards or summary
+      flashcards: [],
+      summary: null
+    }
+  ];
+
+  const toggleLecture = (lectureId) => {
+    setExpandedLectures(prev => ({
+      ...prev,
+      [lectureId]: !prev[lectureId]
+    }));
+  };
+
+  const handleQuizClick = (lectureId, quizId) => {
+    setActiveContent({ lectureId, type: 'quiz', id: quizId });
+  };
+
+  const handleFlashcardClick = (lectureId, cardId) => {
+    setActiveContent({ lectureId, type: 'flashcard', id: cardId });
+  };
+
+  const handleSummaryClick = (lectureId, summaryId) => {
+    setActiveContent({ lectureId, type: 'summary', id: summaryId });
+  };
+
+  // Helper function to check if array has content
+  const hasContent = (array) => {
+    return array && Array.isArray(array) && array.length > 0;
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#F7FAFF] via-[#F4FBF7] to-[#F2FAFF] text-slate-700">
@@ -28,14 +105,115 @@ export default function MainPage({ user, onLogout }) {
                         <Plus className="h-3 w-3" /> Add
                       </button>
                     </div>
-                    <div className="space-y-3 overflow-auto pr-1">
-                      {[
-                        { id: 1, title: "Lecture 1" },
-                        { id: 2, title: "Lecture 2" },
-                      ].map((n) => (
-                        <button key={n.id} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:border-slate-300 focus:ring-2 focus:ring-sky-200">
-                          {n.title}
-                        </button>
+                    <div className="space-y-2 overflow-auto pr-1">
+                      {lectures.map((lecture) => (
+                        <div key={lecture.id} className="space-y-1">
+                          {/* Lecture Header */}
+                          <div className="rounded-xl border border-slate-200 bg-white p-2">
+                            <button
+                              onClick={() => toggleLecture(lecture.id)}
+                              className="w-full flex items-center justify-between text-left"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                {expandedLectures[lecture.id] ? (
+                                  <ChevronDown className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                                ) : (
+                                  <ChevronRightIcon className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                                )}
+                                <span className="font-medium text-slate-800 text-xs truncate">
+                                  {lecture.title}
+                                </span>
+                              </div>
+                            </button>
+                            
+                            {/* SUMMARY, QUIZZES and FLASHCARDS Sections */}
+                            {expandedLectures[lecture.id] && (
+                              <div className="mt-2 space-y-3">
+                                {/* SUMMARY Section - only show if has content */}
+                                {hasContent(lecture.summary) && (
+                                  <div>
+                                    <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                      SUMMARY
+                                    </h3>
+                                    <div className="space-y-1">
+                                      {lecture.summary.map((summary) => (
+                                        <button
+                                          key={summary.id}
+                                          onClick={() => handleSummaryClick(lecture.id, summary.id)}
+                                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left"
+                                        >
+                                          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <FileText className="h-2.5 w-2.5 text-blue-600" />
+                                          </div>
+                                          <span className="text-xs text-slate-700 font-medium truncate">
+                                            {summary.title}
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* QUIZZES Section - only show if has content */}
+                                {hasContent(lecture.quizzes) && (
+                                  <div>
+                                    <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                      QUIZZES
+                                    </h3>
+                                    <div className="space-y-1">
+                                      {lecture.quizzes.map((quiz) => (
+                                        <button
+                                          key={quiz.id}
+                                          onClick={() => handleQuizClick(lecture.id, quiz.id)}
+                                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left"
+                                        >
+                                          <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                            <HelpCircle className="h-2.5 w-2.5 text-red-600" />
+                                          </div>
+                                          <span className="text-xs text-slate-700 font-medium truncate">
+                                            {quiz.title}
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* FLASHCARDS Section - only show if has content */}
+                                {hasContent(lecture.flashcards) && (
+                                  <div>
+                                    <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                      FLASHCARDS
+                                    </h3>
+                                    <div className="space-y-1">
+                                      {lecture.flashcards.map((card) => (
+                                        <button
+                                          key={card.id}
+                                          onClick={() => handleFlashcardClick(lecture.id, card.id)}
+                                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left"
+                                        >
+                                          <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-slate-600 text-xs">♠</span>
+                                          </div>
+                                          <span className="text-xs text-slate-700 font-medium truncate">
+                                            {card.title}
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Show message if no content available */}
+                                {!hasContent(lecture.summary) && !hasContent(lecture.quizzes) && !hasContent(lecture.flashcards) && (
+                                  <div className="text-center py-4">
+                                    <p className="text-xs text-slate-400 italic">No content available</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </>
