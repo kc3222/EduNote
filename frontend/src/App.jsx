@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Login from "./Login";
 import MainPage from "./MainPage";
+import { logout } from "./api";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -9,8 +10,14 @@ export default function App() {
     setUser(userData);
   };
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = async () => {
+    try {
+      await logout(); // Call the logout API
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null); // Clear user state regardless of API call success
+    }
   };
 
   if (user) {

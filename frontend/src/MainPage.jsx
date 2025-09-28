@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle } from "lucide-react";
 
-export default function MainPage() {
+export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
 
@@ -10,7 +10,7 @@ export default function MainPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#F7FAFF] via-[#F4FBF7] to-[#F2FAFF] text-slate-700">
-      <TopBar />
+      <TopBar user={user} onLogout={onLogout} />
       <div className="w-full px-2 pb-2">
         <div className={`mt-2 flex gap-2`}>
           {/* Left Sidebar */}
@@ -115,7 +115,7 @@ export default function MainPage() {
   );
 }
 
-function TopBar() {
+function TopBar({ user, onLogout }) {
   return (
     <header className="sticky top-0 z-20 bg-white/80 backdrop-blur">
       <div className="w-full flex items-center gap-6 px-2 py-2">
@@ -137,9 +137,12 @@ function TopBar() {
           </div>
         </div>
         
-        {/* Sign out button moved to far right */}
+        {/* User info and sign out button */}
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 shadow-sm">
+          <button 
+            onClick={onLogout}
+            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 shadow-sm"
+          >
             <LogOut className="h-4 w-4" /><span>Sign&nbsp;out</span>
           </button>
         </div>
