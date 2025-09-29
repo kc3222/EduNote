@@ -9,3 +9,7 @@ body { margin: 0; }
   width: 100%;
   text-align: initial;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
