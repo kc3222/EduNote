@@ -1,0 +1,51 @@
+from fastapi import FastAPI, HTTPException, Depends
+from typing import List, Optional
+from services.note_service import NoteService
+from models.models import NoteCreate, NoteUpdate, NoteResponse
+import uvicorn
+
+app = FastAPI(title="Notes Service", version="1.0.0")
+
+# Initialize service
+note_service = NoteService()
+
+@app.get("/")
+async def root():
+    return {"message": "Notes Service is running"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+@app.post("/notes", response_model=NoteResponse)
+async def create_note(note: NoteCreate):
+    """Create a new note"""
+    return note_service.create_note(note)
+
+@app.get("/notes", response_model=List[NoteResponse])
+async def get_notes(owner_id: Optional[str] = None, is_archived: Optional[bool] = None):
+    """Get notes with optional filtering"""
+    return note_service.get_notes(owner_id=owner_id, is_archived=is_archived)
+
+@app.get("/notes/{note_id}", response_model=NoteResponse)
+async def get_note(note_id: str):
+    """Get a specific note by ID"""
+    return note_service.get_note(note_id)
+
+@app.put("/notes/{note_id}", response_model=NoteResponse)
+async def update_note(note_id: str, note_update: NoteUpdate):
+    """Update a note"""
+    return note_service.update_note(note_id, note_update)
+
+@app.delete("/notes/{note_id}")
+async def delete_note(note_id: str):
+    """Delete a note"""
+    return note_service.delete_note(note_id)
+
+@app.get("/users/{owner_id}/notes", response_model=List[NoteResponse])
+async def get_user_notes(owner_id: str, is_archived: Optional[bool] = None):
+    """Get all notes for a specific user"""
+    return note_service.get_user_notes(owner_id, is_archived)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8001)
