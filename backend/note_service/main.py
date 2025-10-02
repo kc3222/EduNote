@@ -3,11 +3,23 @@ from typing import List, Optional
 from services.note_service import NoteService
 from models.models import NoteCreate, NoteUpdate, NoteResponse
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="Notes Service", version="1.0.0")
 
 # Initialize service
 note_service = NoteService()
+
+FRONTEND_ORIGIN = "http://localhost:5173"
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_ORIGIN],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():

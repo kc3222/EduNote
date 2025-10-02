@@ -14,10 +14,11 @@ class NoteDAO:
         try:
             note_id = str(uuid.uuid4())
             cur.execute("""
-                INSERT INTO note (id, owner_id, document_id, title, markdown, is_archived)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id, owner_id, document_id, title, markdown, is_archived, created_at, updated_at
-            """, (note_id, note.owner_id, note.document_id, note.title, note.markdown, note.is_archived))
+                INSERT INTO note (id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at
+            """, (note_id, note.owner_id, note.document_id, note.title, note.markdown, 
+                  note.quiz_ids, note.flashcard_ids, note.chat_id, note.is_archived))
             
             result = cur.fetchone()
             conn.commit()
@@ -92,6 +93,18 @@ class NoteDAO:
                 update_fields.append("document_id = %s")
                 params.append(note_update.document_id)
             
+            if note_update.quiz_ids is not None:
+                update_fields.append("quiz_ids = %s")
+                params.append(note_update.quiz_ids)
+            
+            if note_update.flashcard_ids is not None:
+                update_fields.append("flashcard_ids = %s")
+                params.append(note_update.flashcard_ids)
+            
+            if note_update.chat_id is not None:
+                update_fields.append("chat_id = %s")
+                params.append(note_update.chat_id)
+            
             if note_update.is_archived is not None:
                 update_fields.append("is_archived = %s")
                 params.append(note_update.is_archived)
@@ -110,7 +123,7 @@ class NoteDAO:
                 UPDATE note 
                 SET {', '.join(update_fields)}
                 WHERE id = %s
-                RETURNING id, owner_id, document_id, title, markdown, is_archived, created_at, updated_at
+                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at
             """
             
             cur.execute(query, params)
@@ -150,3 +163,42 @@ class NoteDAO:
     def get_by_owner(owner_id: str, is_archived: Optional[bool] = None) -> List[NoteResponse]:
         """Get all notes for a specific owner"""
         return NoteDAO.get_all(owner_id=owner_id, is_archived=is_archived)
+    
+    @staticmethod
+    def get_by_chat(chat_id: str) -> List[NoteResponse]:
+        """Get all notes for a specific chat"""
+        conn, cur = get_db_cursor()
+        try:
+            cur.execute("SELECT * FROM note WHERE chat_id = %s ORDER BY created_at ASC", (chat_id,))
+            results = cur.fetchall()
+            return [NoteResponse(**dict(row)) for row in results]
+        except Exception as e:
+            raise e
+        finally:
+            conn.close()
+    
+    @staticmethod
+    def get_by_quiz(quiz_id: str) -> List[NoteResponse]:
+        """Get all notes that contain a specific quiz"""
+        conn, cur = get_db_cursor()
+        try:
+            cur.execute("SELECT * FROM note WHERE %s = ANY(quiz_ids) ORDER BY created_at ASC", (quiz_id,))
+            results = cur.fetchall()
+            return [NoteResponse(**dict(row)) for row in results]
+        except Exception as e:
+            raise e
+        finally:
+            conn.close()
+    
+    @staticmethod
+    def get_by_flashcard(flashcard_id: str) -> List[NoteResponse]:
+        """Get all notes that contain a specific flashcard"""
+        conn, cur = get_db_cursor()
+        try:
+            cur.execute("SELECT * FROM note WHERE %s = ANY(flashcard_ids) ORDER BY created_at ASC", (flashcard_id,))
+            results = cur.fetchall()
+            return [NoteResponse(**dict(row)) for row in results]
+        except Exception as e:
+            raise e
+        finally:
+            conn.close()
