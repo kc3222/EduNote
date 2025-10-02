@@ -5,6 +5,7 @@ from models.models import NoteCreate, NoteUpdate, NoteResponse
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import argparse
 
 app = FastAPI(title="Notes Service", version="1.0.0")
 
@@ -60,4 +61,9 @@ async def get_user_notes(owner_id: str, is_archived: Optional[bool] = None):
     return note_service.get_user_notes(owner_id, is_archived)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    parser = argparse.ArgumentParser(description="Notes Service")
+    parser.add_argument("--port", type=int, default=8001, help="Port number to run the service on")
+    args = parser.parse_args()
+    
+    print(f"Starting Notes Service on port {args.port}")
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
