@@ -135,3 +135,19 @@ The backend application should connect to the database using:
 - **Database:** `app_db`
 - **Username:** `app_user`
 - **Password:** `app_pass`
+
+## Schema Management
+
+### Migrations
+```bash
+# Run all pending migrations
+python scripts/migrate.py migrate
+
+# Create new migration
+python scripts/migrate.py create descriptions
+```
+
+### Migration Files
+- Located in `migrations/` directory
+- Named with timestamp: `XXX_description.sql`
+- Applied in order, tracked in database

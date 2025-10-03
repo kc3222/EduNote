@@ -26,4 +26,3 @@ export default function App() {
 
   return <Login onLogin={handleLogin} />;
 }
-  

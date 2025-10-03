@@ -1,25 +1,52 @@
-# EduNote Backend
+# EduNote Backend Services
 
-FastAPI backend with JWT authentication.
+## Quick Start
 
-## Setup
+Start all services:
+```bash
+python start_services.py
+```
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Start individual services:
+```bash
+# Auth Service (port 8000)
+cd auth_service && python main.py
 
-2. Run the server:
-   ```bash
-   python3 -m uvicorn main:app --reload --port 8000
-   ```
+# Notes Service (port 8001) 
+cd note_service && python main.py
 
-## Demo User
+# Custom port
+python main.py --port 8002
+```
 
-- Email: `demo@user.com`
-- Password: `password123`
+## Adding a New Service
 
-## API Docs
+1. Create service directory: `mkdir new_service`
+2. Add `main.py` with FastAPI app and port argument parsing
+3. Add `requirements.txt` with dependencies
+4. Update `start_services.py` to include your service
+5. Assign next available port (8002, 8003, etc.)
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+## Service Template
+
+```python
+from fastapi import FastAPI
+import uvicorn
+import argparse
+
+app = FastAPI(title="Service Name")
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8002)
+    args = parser.parse_args()
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
+```
+
+## Ports
+- 8000: Auth Service
+- 8001: Notes Service  
