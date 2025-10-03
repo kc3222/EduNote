@@ -246,12 +246,9 @@ export default function MainPage({ user, onLogout }) {
                   <button className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
                     <Save className="h-4 w-4" /> Save
                   </button>
-                  <button className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
-                    <Eye className="h-4 w-4" /> Preview
-                  </button>
                 </div>
               </div>
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)] overflow-hidden">
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)]">
                 <MarkdownEditor className="h-full" />
               </div>
             </section>

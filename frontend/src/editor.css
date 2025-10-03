@@ -1,10 +1,54 @@
+/* Milkdown component container */
+.milkdown {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ProseMirror editor */
+.ProseMirror {
+    height: calc(100vh - 180px) !important;
+    min-height: calc(100vh - 180px) !important;
+    max-height: calc(100vh - 180px) !important;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 /* Base container */
 .prosemirror-editor {
     line-height: 1.65;
     padding: 16px 18px;
     outline: none;
     background: white;
+    height: calc(100vh - 180px) !important;
+    min-height: calc(100vh - 180px) !important;
+    overflow-y: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
+
+/* Force height inheritance for all nested elements */
+.prosemirror-editor * {
+    max-height: 100%;
+}
+
+/* Force the editor content to fill the available space */
+.prosemirror-editor .ProseMirror {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Editor content wrapper */
+.prosemirror-editor .ProseMirror > div {
+    height: 100%;
+    min-height: 100%;
+    overflow-y: auto;
+}
   
   /* Headings */
   .prosemirror-editor h1 { font-size: 1.875rem; font-weight: 700; margin: 1.25rem 0 .5rem; }

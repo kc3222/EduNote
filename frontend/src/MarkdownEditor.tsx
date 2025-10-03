@@ -13,6 +13,7 @@ type MarkdownEditorProps = {
   editable?: boolean;
   ariaLabel?: string;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown editor" }: MarkdownEditorProps) {
@@ -35,15 +36,29 @@ function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown e
       .use(commonmark)
   );
 
-  return <Milkdown />;
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", flex: 1 }}>
+      <Milkdown />
+    </div>
+  );
 }
 
 export default function MarkdownEditor(props: MarkdownEditorProps) {
-  const { className } = props;
+  const { className, style } = props;
   return (
-    <div className={className} style={{ height: "100%" }}>
+    <div 
+      className={className} 
+      style={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column",
+        ...style 
+      }}
+    >
       <MilkdownProvider>
-        <InnerEditor {...props} />
+        <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <InnerEditor {...props} />
+        </div>
       </MilkdownProvider>
     </div>
   );
