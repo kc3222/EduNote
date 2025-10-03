@@ -24,4 +24,51 @@ export async function login(email, password) {
     });
     return res.json();
   }
+
+// Note API functions
+const NOTES_API_BASE = "http://localhost:8001";
+
+export async function createNote(noteData) {
+  const res = await fetch(`${NOTES_API_BASE}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(noteData),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to create note");
+  }
+  return res.json();
+}
+
+export async function updateNote(noteId, noteData) {
+  const res = await fetch(`${NOTES_API_BASE}/notes/${noteId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(noteData),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to update note");
+  }
+  return res.json();
+}
+
+export async function getNote(noteId) {
+  const res = await fetch(`${NOTES_API_BASE}/notes/${noteId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to get note");
+  }
+  return res.json();
+}
+
+export async function getUserNotes(ownerId) {
+  const res = await fetch(`${NOTES_API_BASE}/users/${ownerId}/notes`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to get user notes");
+  }
+  return res.json();
+}
   

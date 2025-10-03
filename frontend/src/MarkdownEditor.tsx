@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { MilkdownProvider, Milkdown, useEditor } from "@milkdown/react";
 import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
+import { listener, listenerCtx } from "@milkdown/plugin-listener";
 
-// Use one of the provided editor themes
 // import "./editorSnowStorm.css";
 import "./editor.css"
 // import "./editorNordDark.css";
@@ -14,9 +14,11 @@ type MarkdownEditorProps = {
   ariaLabel?: string;
   className?: string;
   style?: React.CSSProperties;
+  onContentChange?: (content: string) => void;
+  onSave?: () => void;
 };
 
-function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown editor" }: MarkdownEditorProps) {
+function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown editor", onContentChange, onSave }: MarkdownEditorProps) {
   useEditor((root) =>
     Editor.make()
       .config((ctx) => {
@@ -32,9 +34,30 @@ function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown e
             class: "prosemirror-editor",
           },
         });
+        
+        // Set up content change listener
+        ctx.set(listenerCtx, {
+          markdownUpdated: (ctx, markdown) => {
+            onContentChange?.(markdown);
+          },
+        });
       })
       .use(commonmark)
+      .use(listener)
   );
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        onSave?.();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onSave]);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", flex: 1 }}>

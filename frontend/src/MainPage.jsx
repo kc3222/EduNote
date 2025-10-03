@@ -1,13 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MarkdownEditor from "./MarkdownEditor";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
+import { createNote, updateNote, getUserNotes } from "./api";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [expandedLectures, setExpandedLectures] = useState({});
   const [activeContent, setActiveContent] = useState(null);
+  const [currentNote, setCurrentNote] = useState(null);
+  const [noteContent, setNoteContent] = useState("# Notes\n\nType `#` then a space to create a heading.\n\n- Item 1\n- Item 2");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
 
   const leftW = leftOpen ? "w-80" : "w-[64px]";
   const rightW = rightOpen ? "w-[64px]" : "w-[24px]";
@@ -85,6 +90,56 @@ export default function MainPage({ user, onLogout }) {
   // Helper function to check if array has content
   const hasContent = (array) => {
     return array && Array.isArray(array) && array.length > 0;
+  };
+
+  // Handle content changes in the editor
+  const handleContentChange = (content) => {
+    setNoteContent(content);
+  };
+
+  // Handle saving the note - always save to the same note for testing
+  const handleSave = async () => {
+    if (!user?.id) {
+      setSaveStatus("Error: User not logged in");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus("Saving...");
+
+    try {
+      if (currentNote) {
+        // Update existing note
+        const updatedNote = await updateNote(currentNote.id, {
+          markdown: noteContent,
+          title: "Lecture 1 Notes"
+        });
+        setCurrentNote(updatedNote);
+        setSaveStatus("Saved successfully!");
+      } else {
+        // Create new note for testing
+        const noteData = {
+          title: "Lecture 1 Notes",
+          markdown: noteContent,
+          owner_id: "00000000-0000-0000-0000-000000000001",
+          document_id: null,  // Change from undefined to null
+          quiz_ids: [],
+          flashcard_ids: [],
+          chat_id: null,      // Add this field too
+          is_archived: false
+        };
+        const newNote = await createNote(noteData);
+        setCurrentNote(newNote);
+        setSaveStatus("Created test note!");
+      }
+    } catch (error) {
+      console.error("Error saving note:", error);
+      setSaveStatus(`Error: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+      // Clear status message after 3 seconds
+      setTimeout(() => setSaveStatus(""), 3000);
+    }
   };
 
   return (
@@ -243,13 +298,28 @@ export default function MainPage({ user, onLogout }) {
                   Editing: <span className="font-semibold text-slate-800">Lecture 1</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
-                    <Save className="h-4 w-4" /> Save
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save className="h-4 w-4" /> 
+                    {isSaving ? "Saving..." : "Save"}
                   </button>
+                  {saveStatus && (
+                    <span className={`text-xs ${saveStatus.includes("Error") ? "text-red-600" : "text-green-600"}`}>
+                      {saveStatus}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)]">
-                <MarkdownEditor className="h-full" />
+                <MarkdownEditor 
+                  className="h-full" 
+                  initialMarkdown={noteContent}
+                  onContentChange={handleContentChange}
+                  onSave={handleSave}
+                />
               </div>
             </section>
 

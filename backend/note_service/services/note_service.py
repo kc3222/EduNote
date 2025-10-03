@@ -20,14 +20,14 @@ class NoteService:
                 raise HTTPException(status_code=400, detail="Note content too large")
             
             # Validate UUIDs in arrays
-            if note.quiz_ids:
-                self._validate_uuids(note.quiz_ids, "quiz_ids")
+            # if note.quiz_ids:
+                # self._validate_uuids(note.quiz_ids, "quiz_ids")
             
-            if note.flashcard_ids:
-                self._validate_uuids(note.flashcard_ids, "flashcard_ids")
+            # if note.flashcard_ids:
+                # self._validate_uuids(note.flashcard_ids, "flashcard_ids")
             
-            if note.chat_id:
-                self._validate_uuid(note.chat_id, "chat_id")
+            # if note.chat_id:
+            #     self._validate_uuid(note.chat_id, "chat_id")
             
             return self.dao.create(note)
         except Exception as e:

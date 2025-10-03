@@ -11,6 +11,7 @@ CREATE TABLE app_user (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         CITEXT UNIQUE NOT NULL,
   display_name  TEXT,
+  password      TEXT NOT NULL,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -50,3 +51,12 @@ CREATE TRIGGER update_note_updated_at
     BEFORE UPDATE ON note 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Insert default test user
+INSERT INTO app_user (id, email, display_name, password) 
+VALUES (
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    'demo@user.com',
+    'Test User',
+    'password123'
+) ON CONFLICT (email) DO NOTHING;

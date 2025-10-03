@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from typing import List, Optional
 from services.note_service import NoteService
 from models.models import NoteCreate, NoteUpdate, NoteResponse
@@ -31,9 +31,28 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/notes", response_model=NoteResponse)
-async def create_note(note: NoteCreate):
+async def create_note(request: Request):
     """Create a new note"""
-    return note_service.create_note(note)
+    try:
+        # Get raw body for debugging
+        body = await request.body()
+        
+        # Parse JSON manually to see what we get
+        import json
+        note_data = json.loads(body)
+        print(f"Parsed JSON: {note_data}")
+        
+        # Try to create NoteCreate object
+        note = NoteCreate(**note_data)
+        print(f"NoteCreate object: {note}")
+        
+        return note_service.create_note(note)
+    except Exception as e:
+        print(f"Error in create_note: {e}")
+        print(f"Error type: {type(e)}")
+        raise HTTPException(status_code=422, detail=str(e))
+    # print(f"Creating note: {note}")
+    # return note_service.create_note(note)
 
 @app.get("/notes", response_model=List[NoteResponse])
 async def get_notes(owner_id: Optional[str] = None, is_archived: Optional[bool] = None):

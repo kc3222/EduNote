@@ -22,7 +22,35 @@ class NoteDAO:
             
             result = cur.fetchone()
             conn.commit()
-            return NoteResponse(**dict(result))
+            
+            # Convert result to dict and parse JSON arrays
+            note_dict = dict(result)
+            print(f"Raw database result: {note_dict}")
+            print(f"quiz_ids type: {type(note_dict.get('quiz_ids'))}, value: {note_dict.get('quiz_ids')}")
+            print(f"flashcard_ids type: {type(note_dict.get('flashcard_ids'))}, value: {note_dict.get('flashcard_ids')}")
+            
+            if 'quiz_ids' in note_dict:
+                import json
+                if isinstance(note_dict['quiz_ids'], str):
+                    if note_dict['quiz_ids'] == '{}':
+                        note_dict['quiz_ids'] = []
+                    else:
+                        note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids'])
+                elif isinstance(note_dict['quiz_ids'], dict):
+                    note_dict['quiz_ids'] = []
+            if 'flashcard_ids' in note_dict:
+                import json
+                if isinstance(note_dict['flashcard_ids'], str):
+                    if note_dict['flashcard_ids'] == '{}':
+                        note_dict['flashcard_ids'] = []
+                    else:
+                        note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids'])
+                elif isinstance(note_dict['flashcard_ids'], dict):
+                    note_dict['flashcard_ids'] = []
+            
+            print(f"After parsing - quiz_ids: {note_dict.get('quiz_ids')}, flashcard_ids: {note_dict.get('flashcard_ids')}")
+            
+            return NoteResponse(**note_dict)
         except Exception as e:
             conn.rollback()
             raise e
@@ -40,7 +68,28 @@ class NoteDAO:
             if not result:
                 return None
             
-            return NoteResponse(**dict(result))
+            # Convert result to dict and parse JSON arrays
+            note_dict = dict(result)
+            if 'quiz_ids' in note_dict:
+                import json
+                if isinstance(note_dict['quiz_ids'], str):
+                    if note_dict['quiz_ids'] == '{}':
+                        note_dict['quiz_ids'] = []
+                    else:
+                        note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids'])
+                elif isinstance(note_dict['quiz_ids'], dict):
+                    note_dict['quiz_ids'] = []
+            if 'flashcard_ids' in note_dict:
+                import json
+                if isinstance(note_dict['flashcard_ids'], str):
+                    if note_dict['flashcard_ids'] == '{}':
+                        note_dict['flashcard_ids'] = []
+                    else:
+                        note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids'])
+                elif isinstance(note_dict['flashcard_ids'], dict):
+                    note_dict['flashcard_ids'] = []
+            
+            return NoteResponse(**note_dict)
         except Exception as e:
             raise e
         finally:
@@ -66,7 +115,20 @@ class NoteDAO:
             
             cur.execute(query, params)
             results = cur.fetchall()
-            return [NoteResponse(**dict(row)) for row in results]
+            
+            # Convert results to dicts and parse JSON arrays
+            notes = []
+            for row in results:
+                note_dict = dict(row)
+                if 'quiz_ids' in note_dict and note_dict['quiz_ids']:
+                    import json
+                    note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids']) if isinstance(note_dict['quiz_ids'], str) else note_dict['quiz_ids']
+                if 'flashcard_ids' in note_dict and note_dict['flashcard_ids']:
+                    import json
+                    note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids']) if isinstance(note_dict['flashcard_ids'], str) else note_dict['flashcard_ids']
+                notes.append(NoteResponse(**note_dict))
+            
+            return notes
         except Exception as e:
             raise e
         finally:
@@ -133,7 +195,29 @@ class NoteDAO:
                 return None
             
             conn.commit()
-            return NoteResponse(**dict(result))
+            
+            # Convert result to dict and parse JSON arrays
+            note_dict = dict(result)
+            if 'quiz_ids' in note_dict:
+                import json
+                if isinstance(note_dict['quiz_ids'], str):
+                    if note_dict['quiz_ids'] == '{}':
+                        note_dict['quiz_ids'] = []
+                    else:
+                        note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids'])
+                elif isinstance(note_dict['quiz_ids'], dict):
+                    note_dict['quiz_ids'] = []
+            if 'flashcard_ids' in note_dict:
+                import json
+                if isinstance(note_dict['flashcard_ids'], str):
+                    if note_dict['flashcard_ids'] == '{}':
+                        note_dict['flashcard_ids'] = []
+                    else:
+                        note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids'])
+                elif isinstance(note_dict['flashcard_ids'], dict):
+                    note_dict['flashcard_ids'] = []
+            
+            return NoteResponse(**note_dict)
         except Exception as e:
             conn.rollback()
             raise e
@@ -171,7 +255,20 @@ class NoteDAO:
         try:
             cur.execute("SELECT * FROM note WHERE chat_id = %s ORDER BY created_at ASC", (chat_id,))
             results = cur.fetchall()
-            return [NoteResponse(**dict(row)) for row in results]
+            
+            # Convert results to dicts and parse JSON arrays
+            notes = []
+            for row in results:
+                note_dict = dict(row)
+                if 'quiz_ids' in note_dict and note_dict['quiz_ids']:
+                    import json
+                    note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids']) if isinstance(note_dict['quiz_ids'], str) else note_dict['quiz_ids']
+                if 'flashcard_ids' in note_dict and note_dict['flashcard_ids']:
+                    import json
+                    note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids']) if isinstance(note_dict['flashcard_ids'], str) else note_dict['flashcard_ids']
+                notes.append(NoteResponse(**note_dict))
+            
+            return notes
         except Exception as e:
             raise e
         finally:
