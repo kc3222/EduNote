@@ -1,0 +1,71 @@
+/* Base container */
+.prosemirror-editor {
+    line-height: 1.65;
+    padding: 16px 18px;
+    outline: none;
+    background: white;
+  }
+  
+  /* Headings */
+  .prosemirror-editor h1 { font-size: 1.875rem; font-weight: 700; margin: 1.25rem 0 .5rem; }
+  .prosemirror-editor h2 { font-size: 1.5rem;   font-weight: 700; margin: 1.1rem 0 .5rem; }
+  .prosemirror-editor h3 { font-size: 1.25rem;  font-weight: 600; margin: .9rem 0 .5rem; }
+  .prosemirror-editor h4 { font-size: 1.125rem; font-weight: 600; margin: .8rem 0 .5rem; }
+  .prosemirror-editor h5 { font-size: 1rem;     font-weight: 600; margin: .7rem 0 .4rem; }
+  .prosemirror-editor h6 { font-size: .875rem;  font-weight: 600; letter-spacing: .02em; color: #475569; margin: .6rem 0 .4rem; }
+  
+  /* Paragraph & lists */
+  .prosemirror-editor p { margin: .5rem 0; }
+  .prosemirror-editor ul, .prosemirror-editor ol { padding-left: 1.25rem; margin: .5rem 0; }
+  .prosemirror-editor ul { list-style: disc; }
+  .prosemirror-editor ol { list-style: decimal; }
+  .prosemirror-editor li > p { margin: .25rem 0; }
+  
+  /* Blockquote */
+  .prosemirror-editor blockquote {
+    border-left: 4px solid #e2e8f0;
+    padding: .25rem .75rem;
+    color: #475569;
+    margin: .75rem 0;
+    background: #f8fafc;
+  }
+  
+  /* Code */
+  .prosemirror-editor code,
+  .prosemirror-editor pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .9em;
+  }
+  .prosemirror-editor code {
+    background: #f1f5f9;
+    padding: .15rem .35rem;
+    border-radius: .375rem;
+  }
+  .prosemirror-editor pre {
+    background: #0b1220;
+    color: #e2e8f0;
+    padding: .9rem 1rem;
+    border-radius: .5rem;
+    overflow: auto;
+  }
+  .prosemirror-editor pre code { background: transparent; padding: 0; }
+  
+  /* HR, links, images */
+  .prosemirror-editor hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 1rem 0;
+  }
+  .prosemirror-editor a { color: #2563eb; text-decoration: underline; }
+  .prosemirror-editor img { max-width: 100%; height: auto; border-radius: .25rem; }
+  
+  /* Selection & focus */
+  .prosemirror-editor .ProseMirror-selectednode { outline: 2px solid #93c5fd; }
+  
+  /* Placeholder (optional) */
+  .prosemirror-editor .ProseMirror p.is-empty::before {
+    content: attr(data-placeholder);
+    color: #94a3b8;
+    float: left; height: 0; pointer-events: none;
+  }
+  

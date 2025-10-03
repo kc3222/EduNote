@@ -1,0 +1,122 @@
+/* Base editor container */
+.prosemirror-editor {
+    background: #ECEFF4;          /* Snow Storm brightest */
+    color: #2E3440;               /* Polar Night dark text */
+    line-height: 1.65;
+    padding: 16px 18px;
+    outline: none;
+    min-height: 100%;
+    font-family: system-ui, sans-serif;
+  }
+  
+  /* Headings */
+  .prosemirror-editor h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin: 1.25rem 0 .5rem;
+    color: #2E3440;
+    border-bottom: 1px solid #D8DEE9;
+  }
+  .prosemirror-editor h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 1.1rem 0 .5rem;
+    color: #3B4252;
+    border-bottom: 1px solid #D8DEE9;
+  }
+  .prosemirror-editor h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: .9rem 0 .5rem;
+    color: #4C566A;
+  }
+  
+  /* Paragraphs & lists */
+  .prosemirror-editor p {
+    margin: .5rem 0;
+  }
+  .prosemirror-editor ul,
+  .prosemirror-editor ol {
+    padding-left: 1.25rem;
+    margin: .5rem 0;
+  }
+  .prosemirror-editor ul {
+    list-style: disc;
+  }
+  .prosemirror-editor ol {
+    list-style: decimal;
+  }
+  .prosemirror-editor li > p {
+    margin: .25rem 0;
+  }
+  
+  /* Blockquotes */
+  .prosemirror-editor blockquote {
+    border-left: 4px solid #5E81AC; /* Frost blue */
+    padding: .25rem .75rem;
+    color: #2E3440;
+    margin: .75rem 0;
+    background: #E5E9F0;
+    border-radius: .25rem;
+  }
+  
+  /* Inline code */
+  .prosemirror-editor code {
+    background: #E5E9F0;
+    color: #BF616A;               /* Aurora red */
+    padding: .15rem .35rem;
+    border-radius: .375rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .9em;
+  }
+  
+  /* Code blocks */
+  .prosemirror-editor pre {
+    background: #D8DEE9;
+    color: #2E3440;
+    padding: .9rem 1rem;
+    border-radius: .5rem;
+    overflow-x: auto;
+  }
+  .prosemirror-editor pre code {
+    background: transparent;
+    padding: 0;
+    color: #A3BE8C;               /* Aurora green */
+  }
+  
+  /* Links */
+  .prosemirror-editor a {
+    color: #5E81AC;               /* Frost blue */
+    text-decoration: underline;
+  }
+  
+  /* Horizontal rules */
+  .prosemirror-editor hr {
+    border: none;
+    border-top: 1px solid #D8DEE9;
+    margin: 1rem 0;
+  }
+  
+  /* Images */
+  .prosemirror-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: .25rem;
+    display: block;
+    margin: .5rem 0;
+  }
+  
+  /* Selection highlight */
+  .prosemirror-editor .ProseMirror-selectednode {
+    outline: 2px solid #81A1C1;   /* Frost cyan */
+  }
+  
+  /* Placeholder text (optional) */
+  .prosemirror-editor .ProseMirror p.is-empty::before {
+    content: attr(data-placeholder);
+    color: #94A3B8;
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+  

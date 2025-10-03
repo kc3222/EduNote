@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import MarkdownEditor from "./MarkdownEditor";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
 
@@ -250,8 +251,8 @@ export default function MainPage({ user, onLogout }) {
                   </button>
                 </div>
               </div>
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)] grid place-items-center text-slate-400 italic text-sm">
-                [Markdown Editor Blocks]
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)] overflow-hidden">
+                <MarkdownEditor className="h-full" />
               </div>
             </section>
 
