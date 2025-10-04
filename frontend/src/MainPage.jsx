@@ -100,6 +100,12 @@ export default function MainPage({ user, onLogout }) {
 
   const handleNoteClick = (note) => {
     console.log(note);
+    
+    // If switching to a different note, discard any temporary notes
+    if (currentNote && currentNote.isTemporary && currentNote.id !== note.id) {
+      handleDiscardTemporaryNote(currentNote.id);
+    }
+    
     setCurrentNote(note);
     setNoteContent(note.markdown);
     setActiveContent({ type: 'note', id: note.id });
@@ -115,7 +121,63 @@ export default function MainPage({ user, onLogout }) {
     setNoteContent(content);
   };
 
-  // Handle saving the note - always save to the same note for testing
+  // Handle discarding temporary notes
+  const handleDiscardTemporaryNote = (noteId) => {
+    setLectures(prevLectures => 
+      prevLectures.filter(lecture => lecture.id !== noteId)
+    );
+    
+    // If the discarded note was currently active, clear the editor
+    if (currentNote && currentNote.id === noteId) {
+      setCurrentNote(null);
+      setNoteContent("");
+      setActiveContent(null);
+    }
+  };
+
+  // Handle creating a new blank note (frontend only)
+  const handleCreateNewNote = () => {
+    if (!user?.id) {
+      setSaveStatus("Error: User not logged in");
+      return;
+    }
+
+    // Create a temporary note object for frontend state only
+    const tempNote = {
+      id: `temp-${Date.now()}`, // Temporary ID for frontend
+      title: "Untitled Note",
+      markdown: "",
+      owner_id: user.id,
+      document_id: null,
+      quiz_ids: [],
+      flashcard_ids: [],
+      chat_id: null,
+      is_archived: false,
+      isTemporary: true // Flag to indicate this is not yet saved
+    };
+    
+    setCurrentNote(tempNote);
+    setNoteContent("");
+    setActiveContent({ type: 'note', id: tempNote.id });
+    
+    // Add temporary note to lectures list so it appears in sidebar
+    const tempLecture = {
+      id: tempNote.id,
+      title: tempNote.title,
+      notes: [tempNote],
+      quizzes: [],
+      flashcards: [],
+      summary: []
+    };
+    
+    setLectures(prevLectures => [tempLecture, ...prevLectures]);
+    setSaveStatus("New note created - click Save to persist");
+    
+    // Clear status message after 3 seconds
+    setTimeout(() => setSaveStatus(""), 3000);
+  };
+
+  // Handle saving the note
   const handleSave = async (content) => {
     if (!user?.id) {
       setSaveStatus("Error: User not logged in");
@@ -129,8 +191,42 @@ export default function MainPage({ user, onLogout }) {
     const contentToSave = content || noteContent;
 
     try {
-      if (currentNote) {
-        // Update existing note
+      if (currentNote && currentNote.isTemporary) {
+        // Create new note from temporary note
+        const noteData = {
+          title: currentNote.title,
+          markdown: contentToSave,
+          owner_id: user.id,
+          document_id: null,
+          quiz_ids: [],
+          flashcard_ids: [],
+          chat_id: null,
+          is_archived: false
+        };
+        const newNote = await createNote(noteData);
+        setCurrentNote(newNote);
+        setSaveStatus("Note created and saved!");
+        
+        // Replace temporary note in lectures list with saved note
+        setLectures(prevLectures => {
+          const updatedLectures = prevLectures.map(lecture => {
+            if (lecture.id === currentNote.id) {
+              // Replace temporary lecture with new saved note
+              return {
+                id: newNote.document_id || newNote.id,
+                title: newNote.title,
+                notes: [newNote],
+                quizzes: [],
+                flashcards: [],
+                summary: []
+              };
+            }
+            return lecture;
+          });
+          return updatedLectures;
+        });
+      } else if (currentNote && !currentNote.isTemporary) {
+        // Update existing saved note
         const updatedNote = await updateNote(currentNote.id, {
           markdown: contentToSave,
           title: currentNote.title
@@ -143,7 +239,7 @@ export default function MainPage({ user, onLogout }) {
         const lecturesData = transformNotesToLectures(notes);
         setLectures(lecturesData);
       } else {
-        // Create new note
+        // Fallback: create new note if no current note
         const noteData = {
           title: "New Note",
           markdown: contentToSave,
@@ -188,8 +284,11 @@ export default function MainPage({ user, onLogout }) {
                         <NotebookPen className="h-4 w-4" />
                         <span className="font-medium text-slate-800 text-sm">My Notes</span>
                       </div>
-                      <button className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100" onClick={() => setLeftOpen(false)}>
-                        <Plus className="h-3 w-3" /> Add
+                      <button 
+                        className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100" 
+                        onClick={handleCreateNewNote}
+                      >
+                        <Plus className="h-3 w-3" /> New Note
                       </button>
                     </div>
                     <div className="space-y-2 overflow-auto pr-1">
@@ -231,20 +330,40 @@ export default function MainPage({ user, onLogout }) {
                               <div className="mt-2 space-y-3">
                                 {/* Single Note - show directly without NOTES header */}
                                 {hasContent(lecture.notes) && lecture.notes[0] && (
-                                  <div>
+                                  <div className="group relative">
                                     <button
                                       onClick={() => handleNoteClick(lecture.notes[0])}
                                       className={`w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left ${
                                         currentNote?.id === lecture.notes[0].id ? 'bg-blue-50 ring-1 ring-blue-200' : ''
                                       }`}
                                     >
-                                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                                        <FileText className="h-2.5 w-2.5 text-green-600" />
+                                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                        lecture.notes[0].isTemporary ? 'bg-orange-100' : 'bg-green-100'
+                                      }`}>
+                                        <FileText className={`h-2.5 w-2.5 ${
+                                          lecture.notes[0].isTemporary ? 'text-orange-600' : 'text-green-600'
+                                        }`} />
                                       </div>
                                       <span className="text-xs text-slate-700 font-medium truncate">
                                         {lecture.notes[0].title}
+                                        {lecture.notes[0].isTemporary && (
+                                          <span className="ml-1 text-orange-600">(Unsaved)</span>
+                                        )}
                                       </span>
                                     </button>
+                                    {/* Discard button for temporary notes */}
+                                    {lecture.notes[0].isTemporary && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDiscardTemporaryNote(lecture.notes[0].id);
+                                        }}
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Discard note"
+                                      >
+                                        <span className="text-red-600 text-xs">×</span>
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                                 {/* SUMMARY Section - only show if has content */}
@@ -360,6 +479,9 @@ export default function MainPage({ user, onLogout }) {
                   Editing: <span className="font-semibold text-slate-800">
                     {currentNote ? currentNote.title : "New Note"}
                   </span>
+                  {currentNote?.isTemporary && (
+                    <span className="ml-2 text-xs text-orange-600 font-medium">(Unsaved)</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
