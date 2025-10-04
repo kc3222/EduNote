@@ -32,7 +32,7 @@ def get_current_user(request: Request) -> Optional[UserPublic]:
         return None
     sub = payload.get("sub")
     # In a real app, fetch user by sub (user_id or email). Here, echo back:
-    return UserPublic(id=1, email=sub)
+    return UserPublic(id="00000000-0000-0000-0000-000000000001", email=sub)
 
 @app.post("/auth/login", response_model=UserPublic)
 def login(payload: LoginRequest, response: Response):

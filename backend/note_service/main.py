@@ -53,7 +53,8 @@ async def create_note(request: Request):
 @app.get("/notes", response_model=List[NoteResponse])
 async def get_notes(owner_id: Optional[str] = None, is_archived: Optional[bool] = None):
     """Get notes with optional filtering"""
-    return note_service.get_notes(owner_id=owner_id, is_archived=is_archived)
+    res = note_service.get_notes(owner_id=owner_id, is_archived=is_archived)
+    return res
 
 @app.get("/notes/{note_id}", response_model=NoteResponse)
 async def get_note(note_id: str):
@@ -70,10 +71,6 @@ async def delete_note(note_id: str):
     """Delete a note"""
     return note_service.delete_note(note_id)
 
-@app.get("/users/{owner_id}/notes", response_model=List[NoteResponse])
-async def get_user_notes(owner_id: str, is_archived: Optional[bool] = None):
-    """Get all notes for a specific user"""
-    return note_service.get_user_notes(owner_id, is_archived)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Notes Service")

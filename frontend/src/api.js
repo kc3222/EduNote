@@ -61,7 +61,7 @@ export async function getNote(noteId) {
 }
 
 export async function getUserNotes(ownerId) {
-  const res = await fetch(`/users/${ownerId}/notes`);
+  const res = await fetch(`/notes?owner_id=${ownerId}`);
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.detail || "Failed to get user notes");

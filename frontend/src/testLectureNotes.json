@@ -1,0 +1,48 @@
+{
+    id: 1,
+    title: "Lecture 1 - Introduction to Data Structures",
+    quizzes: [
+    { id: 1, title: "Quiz 1: Key Concepts" },
+    { id: 2, title: "Quiz 2: Terminology" }
+    ],
+    flashcards: [
+    { id: 1, title: "Flashcards: Definitions" }
+    ],
+    summary: [
+    { id: 1, title: "Summary: Key Concepts" }
+    ]
+},
+{
+    id: 2,
+    title: "Lecture 2 - Arrays and Linked Lists",
+    quizzes: [
+    { id: 1, title: "Quiz 1: Array Basics" },
+    { id: 2, title: "Quiz 2: Linked List Operations" },
+    { id: 3, title: "Quiz 3: Time Complexity" }
+    ],
+    flashcards: [
+    { id: 1, title: "Flashcards: Array Methods" },
+    { id: 2, title: "Flashcards: Linked List Terms" }
+    ],
+    summary: [
+    { id: 1, title: "Summary: Array Operations" }
+    ]
+},
+{
+    id: 3,
+    title: "Lecture 3 - Basic Concepts",
+    // No quizzes, flashcards, or summary - testing empty states
+    quizzes: [],
+    flashcards: null,
+    summary: undefined
+},
+{
+    id: 4,
+    title: "Lecture 4 - Advanced Topics",
+    quizzes: [
+    { id: 1, title: "Quiz 1: Advanced Concepts" }
+    ],
+    // No flashcards or summary
+    flashcards: [],
+    summary: null
+}

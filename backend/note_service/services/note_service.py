@@ -95,12 +95,6 @@ class NoteService:
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
     
-    def get_user_notes(self, owner_id: str, is_archived: Optional[bool] = None) -> List[NoteResponse]:
-        """Get all notes for a specific user"""
-        try:
-            return self.dao.get_by_owner(owner_id, is_archived)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
     
     def get_chat_notes(self, chat_id: str) -> List[NoteResponse]:
         """Get all notes for a specific chat"""
