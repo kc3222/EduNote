@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { MilkdownProvider, Milkdown, useEditor } from "@milkdown/react";
 import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
+import { listener, listenerCtx } from "@milkdown/plugin-listener";
+import { getMarkdown, replaceAll } from "@milkdown/utils";
 
 // import "./editorSnowStorm.css";
 import "./editor.css"
@@ -13,20 +15,27 @@ type MarkdownEditorProps = {
   ariaLabel?: string;
   className?: string;
   style?: React.CSSProperties;
-  onContentChange?: (content: string) => void;
-  onSave?: () => void;
+  onContentChange?: (content: string) => void;   // markdown string
+  onSave?: (content?: string) => void;           // markdown string (optional)
 };
 
-function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown editor", onContentChange, onSave }: MarkdownEditorProps) {
+function InnerEditor({
+  initialMarkdown,
+  editable = true,
+  ariaLabel = "Markdown editor",
+  onContentChange,
+  onSave
+}: MarkdownEditorProps) {
   const editorRef = useRef<Editor | null>(null);
-  
+
   useEditor((root) => {
     const editor = Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(
           defaultValueCtx,
-          initialMarkdown ?? "# Notes\n\nType `#` then a space to create a heading.\n\n- Item 1\n- Item 2"
+          initialMarkdown ??
+            "# Notes\n\nType `#` then a space to create a heading.\n\n- Item 1\n- Item 2"
         );
         ctx.set(editorViewOptionsCtx, {
           editable: () => editable,
@@ -35,51 +44,35 @@ function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown e
             class: "prosemirror-editor",
           },
         });
+
+        // Wire up live markdown updates (fires on every doc change).
+        ctx.get(listenerCtx)
+          .markdownUpdated((_, md) => {
+            onContentChange?.(md);          // <-- this is the canonical markdown string
+          });
       })
-      .use(commonmark);
-    
+      .use(commonmark)
+      .use(listener);
+
     editorRef.current = editor;
     return editor;
   });
 
-  // Handle content changes and keyboard shortcuts
+  // Handle Cmd/Ctrl+S -> call onSave with the latest markdown
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-        event.preventDefault();
-        onSave?.();
+    const onKeyDown = async (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        const md = await editorRef.current?.action(getMarkdown());
+        onSave?.(md);
       }
     };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onSave]);
 
-    // Set up content change listener using DOM events
-    const handleContentChange = () => {
-      if (editorRef.current && onContentChange) {
-        // Get the current content from the editor
-        const editorElement = document.querySelector('.prosemirror-editor');
-        if (editorElement) {
-          const content = editorElement.textContent || '';
-          onContentChange(content);
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    
-    // Listen for input events on the editor
-    const editorElement = document.querySelector('.prosemirror-editor');
-    if (editorElement) {
-      editorElement.addEventListener('input', handleContentChange);
-      editorElement.addEventListener('paste', handleContentChange);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      if (editorElement) {
-        editorElement.removeEventListener('input', handleContentChange);
-        editorElement.removeEventListener('paste', handleContentChange);
-      }
-    };
-  }, [onSave, onContentChange]);
+  // Note: We don't need to manually update the editor content when initialMarkdown changes
+  // because the editor is recreated with the new key when switching notes
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", flex: 1 }}>
@@ -91,13 +84,13 @@ function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown e
 export default function MarkdownEditor(props: MarkdownEditorProps) {
   const { className, style } = props;
   return (
-    <div 
-      className={className} 
-      style={{ 
-        height: "100%", 
-        display: "flex", 
+    <div
+      className={className}
+      style={{
+        height: "100%",
+        display: "flex",
         flexDirection: "column",
-        ...style 
+        ...style,
       }}
     >
       <MilkdownProvider>
@@ -108,5 +101,3 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
     </div>
   );
 }
-
-
