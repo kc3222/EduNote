@@ -6,6 +6,7 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import argparse
+import json
 
 app = FastAPI(title="Notes Service", version="1.0.0")
 
@@ -38,18 +39,13 @@ async def create_note(request: Request):
         body = await request.body()
         
         # Parse JSON manually to see what we get
-        import json
         note_data = json.loads(body)
-        print(f"Parsed JSON: {note_data}")
         
         # Try to create NoteCreate object
         note = NoteCreate(**note_data)
-        print(f"NoteCreate object: {note}")
         
         return note_service.create_note(note)
     except Exception as e:
-        print(f"Error in create_note: {e}")
-        print(f"Error type: {type(e)}")
         raise HTTPException(status_code=422, detail=str(e))
     # print(f"Creating note: {note}")
     # return note_service.create_note(note)
@@ -57,7 +53,8 @@ async def create_note(request: Request):
 @app.get("/notes", response_model=List[NoteResponse])
 async def get_notes(owner_id: Optional[str] = None, is_archived: Optional[bool] = None):
     """Get notes with optional filtering"""
-    return note_service.get_notes(owner_id=owner_id, is_archived=is_archived)
+    res = note_service.get_notes(owner_id=owner_id, is_archived=is_archived)
+    return res
 
 @app.get("/notes/{note_id}", response_model=NoteResponse)
 async def get_note(note_id: str):
@@ -74,10 +71,6 @@ async def delete_note(note_id: str):
     """Delete a note"""
     return note_service.delete_note(note_id)
 
-@app.get("/users/{owner_id}/notes", response_model=List[NoteResponse])
-async def get_user_notes(owner_id: str, is_archived: Optional[bool] = None):
-    """Get all notes for a specific user"""
-    return note_service.get_user_notes(owner_id, is_archived)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Notes Service")

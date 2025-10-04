@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       // forwards /auth/* to FastAPI on :8000
-      "/auth": "http://localhost:8000"
+      "/auth": "http://localhost:8000",
+      "/notes": "http://localhost:8001"
     }
   }
 })

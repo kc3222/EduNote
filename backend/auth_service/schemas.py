@@ -6,5 +6,5 @@ class LoginRequest(BaseModel):
 
 
 class UserPublic(BaseModel):
-    id: int
+    id: str
     email: str

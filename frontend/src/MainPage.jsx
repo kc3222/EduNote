@@ -10,63 +10,74 @@ export default function MainPage({ user, onLogout }) {
   const [expandedLectures, setExpandedLectures] = useState({});
   const [activeContent, setActiveContent] = useState(null);
   const [currentNote, setCurrentNote] = useState(null);
-  const [noteContent, setNoteContent] = useState("# Notes\n\nType `#` then a space to create a heading.\n\n- Item 1\n- Item 2");
+  const [noteContent, setNoteContent] = useState("# Notes\n\nType `#` then a space to create a heading.\n\n- Item 1");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
+  const [lectures, setLectures] = useState([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [notesError, setNotesError] = useState("");
 
   const leftW = leftOpen ? "w-80" : "w-[64px]";
   const rightW = rightOpen ? "w-[64px]" : "w-[24px]";
 
-  const lectures = [
-    {
-      id: 1,
-      title: "Lecture 1 - Introduction to Data Structures",
-      quizzes: [
-        { id: 1, title: "Quiz 1: Key Concepts" },
-        { id: 2, title: "Quiz 2: Terminology" }
-      ],
-      flashcards: [
-        { id: 1, title: "Flashcards: Definitions" }
-      ],
-      summary: [
-        { id: 1, title: "Summary: Key Concepts" }
-      ]
-    },
-    {
-      id: 2,
-      title: "Lecture 2 - Arrays and Linked Lists",
-      quizzes: [
-        { id: 1, title: "Quiz 1: Array Basics" },
-        { id: 2, title: "Quiz 2: Linked List Operations" },
-        { id: 3, title: "Quiz 3: Time Complexity" }
-      ],
-      flashcards: [
-        { id: 1, title: "Flashcards: Array Methods" },
-        { id: 2, title: "Flashcards: Linked List Terms" }
-      ],
-      summary: [
-        { id: 1, title: "Summary: Array Operations" }
-      ]
-    },
-    {
-      id: 3,
-      title: "Lecture 3 - Basic Concepts",
-      // No quizzes, flashcards, or summary - testing empty states
-      quizzes: [],
-      flashcards: null,
-      summary: undefined
-    },
-    {
-      id: 4,
-      title: "Lecture 4 - Advanced Topics",
-      quizzes: [
-        { id: 1, title: "Quiz 1: Advanced Concepts" }
-      ],
-      // No flashcards or summary
-      flashcards: [],
-      summary: null
-    }
-  ];
+  // Fetch user notes on component mount
+  useEffect(() => {
+    const fetchNotes = async () => {
+      if (!user?.id) return;
+      
+      setIsLoadingNotes(true);
+      setNotesError("");
+      
+      try {
+        const notes = await getUserNotes(user.id);
+        // Transform notes into lectures structure
+        const lecturesData = transformNotesToLectures(notes);
+        setLectures(lecturesData);
+      } catch (error) {
+        console.error("Failed to fetch notes:", error);
+        setNotesError(error.message);
+      } finally {
+        setIsLoadingNotes(false);
+      }
+    };
+
+    fetchNotes();
+  }, [user?.id]);
+
+  // Transform notes data into lectures structure
+  const transformNotesToLectures = (notes) => {
+    // Group notes by document_id or create individual lectures
+    const lectureMap = new Map();
+    
+    notes.forEach((note) => {
+      const lectureId = note.document_id || note.id;
+      
+      if (!lectureMap.has(lectureId)) {
+        lectureMap.set(lectureId, {
+          id: lectureId,
+          title: note.title,
+          notes: [],
+          quizzes: note.quiz_ids?.map((id, index) => ({
+            id: id,
+            title: `Quiz ${index + 1}: ${note.title}`
+          })) || [],
+          flashcards: note.flashcard_ids?.map((id, index) => ({
+            id: id,
+            title: `Flashcards: ${note.title}`
+          })) || [],
+          summary: note.chat_id ? [{
+            id: note.chat_id,
+            title: `Summary: ${note.title}`
+          }] : []
+        });
+      }
+      
+      const lecture = lectureMap.get(lectureId);
+      lecture.notes.push(note);
+    });
+    
+    return Array.from(lectureMap.values());
+  };
 
   const toggleLecture = (lectureId) => {
     setExpandedLectures(prev => ({
@@ -85,6 +96,13 @@ export default function MainPage({ user, onLogout }) {
 
   const handleSummaryClick = (lectureId, summaryId) => {
     setActiveContent({ lectureId, type: 'summary', id: summaryId });
+  };
+
+  const handleNoteClick = (note) => {
+    console.log(note);
+    setCurrentNote(note);
+    setNoteContent(note.markdown);
+    setActiveContent({ type: 'note', id: note.id });
   };
 
   // Helper function to check if array has content
@@ -112,28 +130,32 @@ export default function MainPage({ user, onLogout }) {
         // Update existing note
         const updatedNote = await updateNote(currentNote.id, {
           markdown: noteContent,
-          title: "Lecture 1 Notes"
+          title: currentNote.title
         });
         setCurrentNote(updatedNote);
         setSaveStatus("Saved successfully!");
       } else {
-        // Create new note for testing
+        // Create new note
         const noteData = {
-          title: "Lecture 1 Notes",
+          title: "New Note",
           markdown: noteContent,
-          owner_id: "00000000-0000-0000-0000-000000000001",
-          document_id: null,  // Change from undefined to null
+          owner_id: user.id,
+          document_id: null,
           quiz_ids: [],
           flashcard_ids: [],
-          chat_id: null,      // Add this field too
+          chat_id: null,
           is_archived: false
         };
         const newNote = await createNote(noteData);
         setCurrentNote(newNote);
-        setSaveStatus("Created test note!");
+        setSaveStatus("Created new note!");
+        
+        // Refresh the lectures list to include the new note
+        const notes = await getUserNotes(user.id);
+        const lecturesData = transformNotesToLectures(notes);
+        setLectures(lecturesData);
       }
     } catch (error) {
-      console.error("Error saving note:", error);
       setSaveStatus(`Error: ${error.message}`);
     } finally {
       setIsSaving(false);
@@ -163,7 +185,20 @@ export default function MainPage({ user, onLogout }) {
                       </button>
                     </div>
                     <div className="space-y-2 overflow-auto pr-1">
-                      {lectures.map((lecture) => (
+                      {isLoadingNotes ? (
+                        <div className="text-center py-4">
+                          <p className="text-xs text-slate-400 italic">Loading notes...</p>
+                        </div>
+                      ) : notesError ? (
+                        <div className="text-center py-4">
+                          <p className="text-xs text-red-500 italic">Error: {notesError}</p>
+                        </div>
+                      ) : lectures.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-xs text-slate-400 italic">No notes found</p>
+                        </div>
+                      ) : (
+                        lectures.map((lecture) => (
                         <div key={lecture.id} className="space-y-1">
                           {/* Lecture Header */}
                           <div className="rounded-xl border border-slate-200 bg-white p-2">
@@ -183,9 +218,27 @@ export default function MainPage({ user, onLogout }) {
                               </div>
                             </button>
                             
-                            {/* SUMMARY, QUIZZES and FLASHCARDS Sections */}
+                            {/* Note and other sections */}
                             {expandedLectures[lecture.id] && (
                               <div className="mt-2 space-y-3">
+                                {/* Single Note - show directly without NOTES header */}
+                                {hasContent(lecture.notes) && lecture.notes[0] && (
+                                  <div>
+                                    <button
+                                      onClick={() => handleNoteClick(lecture.notes[0])}
+                                      className={`w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left ${
+                                        currentNote?.id === lecture.notes[0].id ? 'bg-blue-50 ring-1 ring-blue-200' : ''
+                                      }`}
+                                    >
+                                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="h-2.5 w-2.5 text-green-600" />
+                                      </div>
+                                      <span className="text-xs text-slate-700 font-medium truncate">
+                                        {lecture.notes[0].title}
+                                      </span>
+                                    </button>
+                                  </div>
+                                )}
                                 {/* SUMMARY Section - only show if has content */}
                                 {hasContent(lecture.summary) && (
                                   <div>
@@ -262,7 +315,7 @@ export default function MainPage({ user, onLogout }) {
                                 )}
 
                                 {/* Show message if no content available */}
-                                {!hasContent(lecture.summary) && !hasContent(lecture.quizzes) && !hasContent(lecture.flashcards) && (
+                                {!hasContent(lecture.notes) && !hasContent(lecture.summary) && !hasContent(lecture.quizzes) && !hasContent(lecture.flashcards) && (
                                   <div className="text-center py-4">
                                     <p className="text-xs text-slate-400 italic">No content available</p>
                                   </div>
@@ -271,7 +324,8 @@ export default function MainPage({ user, onLogout }) {
                             )}
                           </div>
                         </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </>
                 ) : (
@@ -295,7 +349,9 @@ export default function MainPage({ user, onLogout }) {
             <section className="rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-100 backdrop-blur p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-500">
-                  Editing: <span className="font-semibold text-slate-800">Lecture 1</span>
+                  Editing: <span className="font-semibold text-slate-800">
+                    {currentNote ? currentNote.title : "New Note"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
@@ -315,6 +371,7 @@ export default function MainPage({ user, onLogout }) {
               </div>
               <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)]">
                 <MarkdownEditor 
+                  key={currentNote?.id || 'new-note'}
                   className="h-full" 
                   initialMarkdown={noteContent}
                   onContentChange={handleContentChange}

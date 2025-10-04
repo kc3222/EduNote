@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { MilkdownProvider, Milkdown, useEditor } from "@milkdown/react";
 import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
-import { listener, listenerCtx } from "@milkdown/plugin-listener";
 
 // import "./editorSnowStorm.css";
 import "./editor.css"
@@ -19,8 +18,10 @@ type MarkdownEditorProps = {
 };
 
 function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown editor", onContentChange, onSave }: MarkdownEditorProps) {
-  useEditor((root) =>
-    Editor.make()
+  const editorRef = useRef<Editor | null>(null);
+  
+  useEditor((root) => {
+    const editor = Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(
@@ -34,19 +35,14 @@ function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown e
             class: "prosemirror-editor",
           },
         });
-        
-        // Set up content change listener
-        ctx.set(listenerCtx, {
-          markdownUpdated: (ctx, markdown) => {
-            onContentChange?.(markdown);
-          },
-        });
       })
-      .use(commonmark)
-      .use(listener)
-  );
+      .use(commonmark);
+    
+    editorRef.current = editor;
+    return editor;
+  });
 
-  // Handle keyboard shortcuts
+  // Handle content changes and keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 's') {
@@ -55,9 +51,35 @@ function InnerEditor({ initialMarkdown, editable = true, ariaLabel = "Markdown e
       }
     };
 
+    // Set up content change listener using DOM events
+    const handleContentChange = () => {
+      if (editorRef.current && onContentChange) {
+        // Get the current content from the editor
+        const editorElement = document.querySelector('.prosemirror-editor');
+        if (editorElement) {
+          const content = editorElement.textContent || '';
+          onContentChange(content);
+        }
+      }
+    };
+
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onSave]);
+    
+    // Listen for input events on the editor
+    const editorElement = document.querySelector('.prosemirror-editor');
+    if (editorElement) {
+      editorElement.addEventListener('input', handleContentChange);
+      editorElement.addEventListener('paste', handleContentChange);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (editorElement) {
+        editorElement.removeEventListener('input', handleContentChange);
+        editorElement.removeEventListener('paste', handleContentChange);
+      }
+    };
+  }, [onSave, onContentChange]);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", flex: 1 }}>

@@ -10,9 +10,8 @@ JWT_TTL_SECONDS = 60 * 60 * 24  # 1 day
 
 # Demo user (replace with DB lookup)
 DEMO_USER = {
-    "id": 1,
+    "id": "00000000-0000-0000-0000-000000000001",
     "email": "demo@user.com",
-    # password: "password123"
     "password_hash": bcrypt.hash("password123"),
 }
 
