@@ -10,7 +10,7 @@ export default function MainPage({ user, onLogout }) {
   const [expandedLectures, setExpandedLectures] = useState({});
   const [activeContent, setActiveContent] = useState(null);
   const [currentNote, setCurrentNote] = useState(null);
-  const [noteContent, setNoteContent] = useState("# Notes\n\nType `#` then a space to create a heading.\n\n- Item 1");
+  const [noteContent, setNoteContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [lectures, setLectures] = useState([]);
@@ -116,7 +116,7 @@ export default function MainPage({ user, onLogout }) {
   };
 
   // Handle saving the note - always save to the same note for testing
-  const handleSave = async () => {
+  const handleSave = async (content) => {
     if (!user?.id) {
       setSaveStatus("Error: User not logged in");
       return;
@@ -125,20 +125,28 @@ export default function MainPage({ user, onLogout }) {
     setIsSaving(true);
     setSaveStatus("Saving...");
 
+    // Use the content from the editor if provided, otherwise use noteContent state
+    const contentToSave = content || noteContent;
+
     try {
       if (currentNote) {
         // Update existing note
         const updatedNote = await updateNote(currentNote.id, {
-          markdown: noteContent,
+          markdown: contentToSave,
           title: currentNote.title
         });
         setCurrentNote(updatedNote);
         setSaveStatus("Saved successfully!");
+        
+        // Refresh the lectures list to reflect the updated note
+        const notes = await getUserNotes(user.id);
+        const lecturesData = transformNotesToLectures(notes);
+        setLectures(lecturesData);
       } else {
         // Create new note
         const noteData = {
           title: "New Note",
-          markdown: noteContent,
+          markdown: contentToSave,
           owner_id: user.id,
           document_id: null,
           quiz_ids: [],

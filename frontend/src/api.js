@@ -39,6 +39,7 @@ export async function createNote(noteData) {
 }
 
 export async function updateNote(noteId, noteData) {
+  console.log("Updating note:", noteId, noteData);
   const res = await fetch(`/notes/${noteId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

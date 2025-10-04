@@ -64,6 +64,7 @@ async def get_note(note_id: str):
 @app.put("/notes/{note_id}", response_model=NoteResponse)
 async def update_note(note_id: str, note_update: NoteUpdate):
     """Update a note"""
+    print(f"Updating note: {note_id}, {note_update}")
     return note_service.update_note(note_id, note_update)
 
 @app.delete("/notes/{note_id}")

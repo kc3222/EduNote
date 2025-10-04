@@ -65,14 +65,14 @@ class NoteService:
                 raise HTTPException(status_code=400, detail="Note content too large")
             
             # Validate UUIDs in arrays
-            if note_update.quiz_ids is not None:
-                self._validate_uuids(note_update.quiz_ids, "quiz_ids")
+            # if note_update.quiz_ids is not None:
+                # self._validate_uuids(note_update.quiz_ids, "quiz_ids")
             
-            if note_update.flashcard_ids is not None:
-                self._validate_uuids(note_update.flashcard_ids, "flashcard_ids")
+            # if note_update.flashcard_ids is not None:
+            #     self._validate_uuids(note_update.flashcard_ids, "flashcard_ids")
             
-            if note_update.chat_id is not None:
-                self._validate_uuid(note_update.chat_id, "chat_id")
+            # if note_update.chat_id is not None:
+            #     self._validate_uuid(note_update.chat_id, "chat_id")
             
             updated_note = self.dao.update(note_id, note_update)
             if not updated_note:
