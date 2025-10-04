@@ -16,6 +16,8 @@ export default function MainPage({ user, onLogout }) {
   const [lectures, setLectures] = useState([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [notesError, setNotesError] = useState("");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitle, setEditingTitle] = useState("");
 
   const leftW = leftOpen ? "w-80" : "w-[64px]";
   const rightW = rightOpen ? "w-[64px]" : "w-[24px]";
@@ -133,6 +135,50 @@ export default function MainPage({ user, onLogout }) {
       setNoteContent("");
       setActiveContent(null);
     }
+  };
+
+  // Handle starting title edit
+  const handleStartTitleEdit = () => {
+    if (currentNote) {
+      setEditingTitle(currentNote.title);
+      setIsEditingTitle(true);
+    }
+  };
+
+  // Handle title change
+  const handleTitleChange = (newTitle) => {
+    if (!currentNote) return;
+    
+    // Update current note title
+    const updatedNote = { ...currentNote, title: newTitle };
+    setCurrentNote(updatedNote);
+    
+    // Update title in lectures list
+    setLectures(prevLectures => 
+      prevLectures.map(lecture => {
+        if (lecture.id === currentNote.id) {
+          return { ...lecture, title: newTitle, notes: lecture.notes.map(note => 
+            note.id === currentNote.id ? { ...note, title: newTitle } : note
+          )};
+        }
+        return lecture;
+      })
+    );
+  };
+
+  // Handle title edit completion
+  const handleTitleEditComplete = () => {
+    if (editingTitle.trim() && editingTitle !== currentNote?.title) {
+      handleTitleChange(editingTitle.trim());
+    }
+    setIsEditingTitle(false);
+    setEditingTitle("");
+  };
+
+  // Handle title edit cancel
+  const handleTitleEditCancel = () => {
+    setIsEditingTitle(false);
+    setEditingTitle("");
   };
 
   // Handle creating a new blank note (frontend only)
@@ -476,9 +522,30 @@ export default function MainPage({ user, onLogout }) {
             <section className="rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-100 backdrop-blur p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-500">
-                  Editing: <span className="font-semibold text-slate-800">
-                    {currentNote ? currentNote.title : "New Note"}
-                  </span>
+                  Editing: {isEditingTitle ? (
+                    <input
+                      type="text"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={handleTitleEditComplete}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleTitleEditComplete();
+                        } else if (e.key === 'Escape') {
+                          handleTitleEditCancel();
+                        }
+                      }}
+                      className="font-semibold text-slate-800 bg-transparent border-b border-slate-300 focus:border-blue-500 focus:outline-none px-1 py-0.5 min-w-0"
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      onClick={handleStartTitleEdit}
+                      className="font-semibold text-slate-800 hover:bg-slate-100 px-1 py-0.5 rounded transition-colors"
+                    >
+                      {currentNote ? currentNote.title : "New Note"}
+                    </button>
+                  )}
                   {currentNote?.isTemporary && (
                     <span className="ml-2 text-xs text-orange-600 font-medium">(Unsaved)</span>
                   )}
