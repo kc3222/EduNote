@@ -92,6 +92,29 @@ npm run dev
 
 The application will be available at `http://localhost:5173` with hot module replacement (HMR) enabled.
 
+## Adding New Service Servers
+
+To add a new backend service, update the proxy configuration in `vite.config.js`:
+
+```javascript
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      "/auth": "http://localhost:8000",     // Auth service
+      "/notes": "http://localhost:8001",    // Note service
+      "/api/v2": "http://localhost:8002"    // New service
+    }
+  }
+})
+```
+
+Then use relative URLs in your API calls:
+```javascript
+// Instead of: fetch('http://localhost:8002/api/v2/endpoint')
+fetch('/api/v2/endpoint')
+```
+
 ## Available Scripts
 
 - `npm run dev` - Start development server

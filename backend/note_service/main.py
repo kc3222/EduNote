@@ -6,6 +6,7 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import argparse
+import json
 
 app = FastAPI(title="Notes Service", version="1.0.0")
 
@@ -38,18 +39,13 @@ async def create_note(request: Request):
         body = await request.body()
         
         # Parse JSON manually to see what we get
-        import json
         note_data = json.loads(body)
-        print(f"Parsed JSON: {note_data}")
         
         # Try to create NoteCreate object
         note = NoteCreate(**note_data)
-        print(f"NoteCreate object: {note}")
         
         return note_service.create_note(note)
     except Exception as e:
-        print(f"Error in create_note: {e}")
-        print(f"Error type: {type(e)}")
         raise HTTPException(status_code=422, detail=str(e))
     # print(f"Creating note: {note}")
     # return note_service.create_note(note)
