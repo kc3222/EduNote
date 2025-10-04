@@ -363,7 +363,7 @@ export default function MainPage({ user, onLogout }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={handleSave}
+                    onClick={() => handleSave()}
                     disabled={isSaving}
                     className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
