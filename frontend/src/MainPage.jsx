@@ -3,6 +3,7 @@ import MarkdownEditor from "./MarkdownEditor";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
 import { createNote, updateNote, getUserNotes } from "./api";
+import CreateFlashcardsPage from "./CreateFlashcardsPage";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -314,6 +315,16 @@ export default function MainPage({ user, onLogout }) {
     }
   };
 
+  if (activeContent?.type === "flashcards") {
+  return (
+    <CreateFlashcardsPage
+      lectureId={activeContent?.lectureId}
+      flashcardId={activeContent?.id}
+      onBack={() => setActiveContent(null)}
+    />
+  );
+}
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#F7FAFF] via-[#F4FBF7] to-[#F2FAFF] text-slate-700">
       <TopBar user={user} onLogout={onLogout} />
@@ -605,7 +616,7 @@ export default function MainPage({ user, onLogout }) {
                 </button>
                 <RailButton icon={<FileText className="h-4 w-4" />} label="Summary" showLabel={rightOpen} />
                 <RailButton icon={<ListChecks className="h-4 w-4" />} label="Quizzes" showLabel={rightOpen} />
-                <RailButton icon={<Layers className="h-4 w-4" />} label="Flashcards" showLabel={rightOpen} />
+                <RailButton icon={<Layers className="h-4 w-4" />} label="Flashcards" showLabel={rightOpen} onClick={() => setActiveContent({ type: "flashcards", lectureId: null, id: null })}/>
                 <RailButton icon={<MessageCircle className="h-4 w-4" />} label="Chat" showLabel={rightOpen} />
               </div>
             </div>
@@ -667,9 +678,9 @@ function NavTab({ label, icon: Icon, active = false }) {
   );
 }
 
-function RailButton({ icon, label, showLabel }) {
+function RailButton({ icon, label, showLabel, onClick}) {
   return (
-    <button className={`group w-[52px] ${showLabel ? "mb-1" : "mb-0"} flex flex-col items-center gap-1 text-[11px] font-medium text-slate-600 focus:outline-none`}>
+    <button onClick={onClick} className={`group w-[52px] ${showLabel ? "mb-1" : "mb-0"} flex flex-col items-center gap-1 text-[11px] font-medium text-slate-600 focus:outline-none`}>
       <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-50 ring-1 ring-slate-200 shadow-sm group-hover:bg-slate-100">
         {icon}
       </div>
