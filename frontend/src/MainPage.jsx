@@ -4,6 +4,7 @@ import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, L
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
 import { createNote, updateNote, getUserNotes } from "./api";
 import CreateFlashcardsPage from "./CreateFlashcardsPage";
+import Chat from "./Chat";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -315,6 +316,7 @@ export default function MainPage({ user, onLogout }) {
     }
   };
 
+
   if (activeContent?.type === "flashcards") {
   return (
     <CreateFlashcardsPage
@@ -323,7 +325,17 @@ export default function MainPage({ user, onLogout }) {
       onBack={() => setActiveContent(null)}
     />
   );
-}
+  }
+
+  if (activeContent?.type === "chat") {
+  return (
+    <Chat
+      lectureId={activeContent?.lectureId}
+      noteId={activeContent?.noteId}
+      onBack={() => setActiveContent(null)}
+    />
+  );
+  }
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#F7FAFF] via-[#F4FBF7] to-[#F2FAFF] text-slate-700">
@@ -617,7 +629,13 @@ export default function MainPage({ user, onLogout }) {
                 <RailButton icon={<FileText className="h-4 w-4" />} label="Summary" showLabel={rightOpen} />
                 <RailButton icon={<ListChecks className="h-4 w-4" />} label="Quizzes" showLabel={rightOpen} />
                 <RailButton icon={<Layers className="h-4 w-4" />} label="Flashcards" showLabel={rightOpen} onClick={() => setActiveContent({ type: "flashcards", lectureId: null, id: null })}/>
-                <RailButton icon={<MessageCircle className="h-4 w-4" />} label="Chat" showLabel={rightOpen} />
+                <RailButton icon={<MessageCircle className="h-4 w-4" />} label="Chat" showLabel={rightOpen} onClick={() => setActiveContent({ type: "chat" })}/>
+                {/* Chat panel docked */}
+                {activeContent === "chat" && rightOpen && (
+                  <div className="mt-2 w-full h-full">
+                    <Chat />
+                  </div>
+                )}
               </div>
             </div>
           </aside>
@@ -678,7 +696,7 @@ function NavTab({ label, icon: Icon, active = false }) {
   );
 }
 
-function RailButton({ icon, label, showLabel, onClick}) {
+function RailButton({ icon, label, showLabel, onClick }) {
   return (
     <button onClick={onClick} className={`group w-[52px] ${showLabel ? "mb-1" : "mb-0"} flex flex-col items-center gap-1 text-[11px] font-medium text-slate-600 focus:outline-none`}>
       <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-50 ring-1 ring-slate-200 shadow-sm group-hover:bg-slate-100">
