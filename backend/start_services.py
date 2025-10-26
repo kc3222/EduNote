@@ -1,9 +1,6 @@
-#!/usr/bin/env python3
-import subprocess
-import sys
-import time
-import signal
 import os
+import sys
+import subprocess
 from pathlib import Path
 
 def signal_handler(sig, frame):

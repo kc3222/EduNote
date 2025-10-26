@@ -1,6 +1,6 @@
 from typing import List, Optional
-from daos.note_dao import NoteDAO
-from models.models import NoteCreate, NoteUpdate, NoteResponse
+from note_service.daos.note_dao import NoteDAO
+from note_service.models.models import NoteCreate, NoteUpdate, NoteResponse
 from fastapi import HTTPException
 
 class NoteService:
@@ -36,23 +36,14 @@ class NoteService:
             raise HTTPException(status_code=400, detail=str(e))
     
     def get_note(self, note_id: str) -> NoteResponse:
-        """Get a note by ID"""
-        try:
-            note = self.dao.get_by_id(note_id)
-            if not note:
-                raise HTTPException(status_code=404, detail="Note not found")
-            return note
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
-    
-    def get_notes(self, owner_id: Optional[str] = None, is_archived: Optional[bool] = None) -> List[NoteResponse]:
-        """Get notes with optional filtering"""
-        try:
-            return self.dao.get_all(owner_id=owner_id, is_archived=is_archived)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        data = self.dao.get_note(note_id)
+        if not data:
+            raise HTTPException(status_code=404, detail="Note not found")
+        return NoteResponse(**data)
+
+    def get_notes(self, owner_id: str | None = None, is_archived: bool | None = None) -> list[NoteResponse]:
+        rows = self.dao.get_notes(owner_id=owner_id, is_archived=is_archived)
+        return [NoteResponse(**row) for row in rows]
     
     def update_note(self, note_id: str, note_update: NoteUpdate) -> NoteResponse:
         """Update a note with business logic validation"""
