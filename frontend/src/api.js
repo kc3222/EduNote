@@ -78,6 +78,7 @@ export async function summarizeNotePersist(id) {
   const res = await fetch(`${NOTES_API_BASE}/notes/${id}/summary`, { method: "PUT" });
   if (!res.ok) throw new Error(`Summarize failed (${res.status})`);
   return res.json();
+}
 
 // Document API functions
 export async function uploadDocument(formData) {
@@ -120,4 +121,3 @@ export async function deleteDocument(documentId) {
   }
   return res.json();
 }
-  
