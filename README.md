@@ -40,7 +40,6 @@ EduNote follows a microservices architecture with clear separation of concerns:
 - **Python 3.13+**: For backend services
 - **Node.js 16+**: For frontend development
 - **Docker Desktop**: For database management
-- **Conda/Miniconda**: For Python environment management (recommended)
 
 ### Platform Support
 - Windows 10/11 (with PowerShell)
@@ -69,19 +68,6 @@ docker-compose ps
 
 ### 3. Backend Environment Setup
 
-#### Option A: Using Conda (Recommended)
-```bash
-# Create conda environment from file
-conda env create -f backend/environment.yml
-
-# Activate environment
-conda activate backend_env
-
-# Install additional dependencies if needed
-conda install psycopg2 fastapi uvicorn pydantic python-multipart -c conda-forge
-```
-
-#### Option B: Using pip
 ```bash
 # Create virtual environment
 python -m venv venv
@@ -113,7 +99,9 @@ npm run dev --dry-run
 Use the Python service manager to start all backend services:
 ```bash
 cd backend
-conda activate backend_env  # or activate your virtual environment
+# Activate your virtual environment first:
+# Windows: ..\venv\Scripts\activate
+# macOS/Linux: source ../venv/bin/activate
 python start_services.py
 ```
 
@@ -139,17 +127,17 @@ python start_services.py
 ```bash
 # Terminal 1 - Auth Service
 cd backend/auth_service
-conda activate backend_env  # or activate your venv
+# Activate virtual environment first (see setup instructions above)
 python main.py --port 8000
 
 # Terminal 2 - Notes Service  
 cd backend/note_service
-conda activate backend_env
+# Activate virtual environment first
 python main.py --port 8001
 
 # Terminal 3 - Document Service
 cd backend/document_service
-conda activate backend_env
+# Activate virtual environment first
 python main.py --port 8002
 ```
 
@@ -286,10 +274,10 @@ netstat -an | grep :8000
 netstat -an | grep :8001
 netstat -an | grep :8002
 
-# Check conda environment
-conda env list
-conda activate backend_env
-conda list
+# Check virtual environment
+# Make sure you're in the activated virtual environment
+python --version
+pip list
 
 # Verify database connection
 python -c "import psycopg2; print('PostgreSQL connection available')"
@@ -311,7 +299,7 @@ netstat -an | grep :5173
 ### Common Solutions
 1. **Port conflicts**: Change service ports in respective `main.py` files
 2. **Database connection**: Ensure Docker is running and database is started
-3. **Module not found**: Verify conda environment is activated
+3. **Module not found**: Verify virtual environment is activated and dependencies are installed
 4. **File upload errors**: Check `uploads/` directory permissions
 5. **CORS issues**: Verify Vite proxy configuration in `vite.config.js`
 
