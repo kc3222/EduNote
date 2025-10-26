@@ -101,9 +101,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/auth": "http://localhost:8000",     // Auth service
-      "/notes": "http://localhost:8001",    // Note service
-      "/api/v2": "http://localhost:8002"    // New service
+      "/auth": "http://localhost:8000",        // Auth service
+      "/notes": "http://localhost:8001",       // Notes service
+      "/documents": "http://localhost:8002",   // Document service
+      "/api/new": "http://localhost:8003"      // New service example
     }
   }
 })
@@ -111,8 +112,8 @@ export default defineConfig({
 
 Then use relative URLs in your API calls:
 ```javascript
-// Instead of: fetch('http://localhost:8002/api/v2/endpoint')
-fetch('/api/v2/endpoint')
+// Instead of: fetch('http://localhost:8003/api/new/endpoint')
+fetch('/api/new/endpoint')
 ```
 
 ## Available Scripts
