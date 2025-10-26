@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import MarkdownEditor from "./MarkdownEditor";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
-import { createNote, updateNote, getUserNotes } from "./api";
+import { createNote, updateNote, getUserNotes, getUserDocuments } from "./api";
 import CreateFlashcardsPage from "./CreateFlashcardsPage";
 import Chat from "./Chat";
+import DocumentUpload from "./components/DocumentUpload";
+import PDFViewer from "./components/PDFViewer";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -20,6 +22,12 @@ export default function MainPage({ user, onLogout }) {
   const [notesError, setNotesError] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState("");
+  
+  // Document upload states
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
 
   const leftW = leftOpen ? "w-80" : "w-[64px]";
   const rightW = rightOpen ? "w-[64px]" : "w-[24px]";
@@ -46,6 +54,26 @@ export default function MainPage({ user, onLogout }) {
     };
 
     fetchNotes();
+  }, [user?.id]);
+
+  // Fetch user documents on component mount
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!user?.id) return;
+      
+      setIsLoadingDocuments(true);
+      
+      try {
+        const docs = await getUserDocuments(user.id);
+        setDocuments(docs);
+      } catch (error) {
+        console.error("Failed to fetch documents:", error);
+      } finally {
+        setIsLoadingDocuments(false);
+      }
+    };
+
+    fetchDocuments();
   }, [user?.id]);
 
   // Transform notes data into lectures structure
@@ -314,6 +342,37 @@ export default function MainPage({ user, onLogout }) {
       // Clear status message after 3 seconds
       setTimeout(() => setSaveStatus(""), 3000);
     }
+  };
+
+  // Handle upload completion
+  const handleUploadComplete = async (uploadedFiles) => {
+    console.log("Upload completed! Files:", uploadedFiles);
+    
+    // Refresh documents list
+    try {
+      const docs = await getUserDocuments(user.id);
+      console.log("Refreshed documents:", docs);
+      setDocuments(docs);
+      
+      // If a PDF was uploaded, select it for viewing
+      const pdfUploads = uploadedFiles.filter(f => f.file.type === 'application/pdf');
+      if (pdfUploads.length > 0) {
+        const firstPdf = docs.find(doc => doc.content_type === 'application/pdf');
+        if (firstPdf) {
+          console.log("Auto-selecting PDF:", firstPdf);
+          setSelectedDocument(firstPdf);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh documents:", error);
+    }
+    
+    setShowUploadModal(false);
+  };
+
+  // Handle document selection
+  const handleDocumentSelect = (document) => {
+    setSelectedDocument(document);
   };
 
 
@@ -603,14 +662,39 @@ export default function MainPage({ user, onLogout }) {
             <section className="rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-100 backdrop-blur p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <FileText className="h-4 w-4" /> PDF Viewer
+                  <FileText className="h-4 w-4" /> Document Viewer
                 </div>
-                <button className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
-                  <Upload className="h-4 w-4" /> Upload
-                </button>
+                <div className="flex items-center gap-2">
+                  {documents.length > 0 && (
+                    <select
+                      value={selectedDocument?.id || ''}
+                      onChange={(e) => {
+                        const doc = documents.find(d => d.id === e.target.value);
+                        setSelectedDocument(doc || null);
+                      }}
+                      className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white"
+                    >
+                      <option value="">Select document...</option>
+                      {documents.map((doc) => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.title} ({doc.content_type === 'application/pdf' ? 'PDF' : 'Other'})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button 
+                    onClick={() => setShowUploadModal(true)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                  >
+                    <Upload className="h-4 w-4" /> Upload
+                  </button>
+                </div>
               </div>
-              <div className="mt-3 rounded-xl border border-slate-200 h-[calc(100vh-180px)] bg-gradient-to-br from-white to-emerald-50 grid place-items-center text-slate-400 italic text-sm">
-                [PDF Viewer Area]
+              <div className="mt-3 h-[calc(100vh-180px)]">
+                <PDFViewer 
+                  document={selectedDocument}
+                  onDocumentSelect={handleDocumentSelect}
+                />
               </div>
             </section>
           </main>
@@ -641,6 +725,15 @@ export default function MainPage({ user, onLogout }) {
           </aside>
         </div>
       </div>
+      
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <DocumentUpload
+          user={user}
+          onUploadComplete={handleUploadComplete}
+          onClose={() => setShowUploadModal(false)}
+        />
+      )}
     </div>
   );
 }

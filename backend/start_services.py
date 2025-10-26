@@ -40,6 +40,11 @@ if __name__ == "__main__":
             "name": "Notes Service", 
             "path": backend_path / "note_service",
             "port": 8001
+        },
+        {
+            "name": "Document Service",
+            "path": backend_path / "document_service",
+            "port": 8002
         }
     ]
     
@@ -59,6 +64,7 @@ if __name__ == "__main__":
         print("\nAll services started successfully!")
         print("Auth Service: http://localhost:8000")
         print("Notes Service: http://localhost:8001")
+        print("Document Service: http://localhost:8002")
         print("\nPress Ctrl+C to stop all services")
         
         # Wait for all processes

@@ -14,6 +14,8 @@ FastAPI backend with JWT authentication.
    python3 -m uvicorn main:app --reload --port 8000
    ```
 
+4. **Service runs on:** `http://localhost:8000`
+
 ## Demo User
 
 - Email: `demo@user.com`

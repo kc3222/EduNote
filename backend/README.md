@@ -25,7 +25,7 @@ python main.py --port 8002
 2. Add `main.py` with FastAPI app and port argument parsing
 3. Add `requirements.txt` with dependencies
 4. Update `start_services.py` to include your service
-5. Assign next available port (8002, 8003, etc.)
+5. Assign next available port (8003, 8004, etc.)
 
 ## Service Template
 
@@ -42,11 +42,12 @@ async def health():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8002)
+    parser.add_argument("--port", type=int, default=8003)
     args = parser.parse_args()
     uvicorn.run(app, host="0.0.0.0", port=args.port)
 ```
 
 ## Ports
 - 8000: Auth Service
-- 8001: Notes Service  
+- 8001: Notes Service
+- 8002: Document Service  

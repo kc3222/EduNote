@@ -8,3 +8,25 @@
 *.pyzw
 *.pyz
 .env
+
+# Run scripts (local environment specific)
+run.bat
+start_simple.bat
+run_*.bat
+*.ps1
+
+# Uploaded files
+backend/document_service/uploads/
+
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment files
+.env.local
+.env.production
