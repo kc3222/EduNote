@@ -69,4 +69,46 @@ export async function getUserNotes(ownerId) {
   }
   return res.json();
 }
+
+// Document API functions
+export async function uploadDocument(formData) {
+  const res = await fetch(`/documents/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to upload document");
+  }
+  return res.json();
+}
+
+export async function getUserDocuments(ownerId) {
+  const res = await fetch(`/documents?owner_id=${ownerId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to get user documents");
+  }
+  return res.json();
+}
+
+export async function getDocument(documentId) {
+  const res = await fetch(`/documents/${documentId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to get document");
+  }
+  return res.json();
+}
+
+export async function deleteDocument(documentId) {
+  const res = await fetch(`/documents/${documentId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to delete document");
+  }
+  return res.json();
+}
   
