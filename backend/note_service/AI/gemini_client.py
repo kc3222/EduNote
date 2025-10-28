@@ -11,13 +11,7 @@ import os
 import json
 import re
 from typing import Any, Dict, Optional
-
-# Optional: keep imports lazy so unit tests can stub
-try:
-    import google.generativeai as genai
-except Exception:  # pragma: no cover
-    genai = None  # we'll assert at runtime
-
+import google.generativeai as genai
 
 # --------------------------
 # Robust JSON parsing helpers
@@ -114,9 +108,6 @@ class GeminiClient:
             model:   Gemini model name
             system_instruction: optional system prompt
         """
-        if genai is None:
-            raise RuntimeError("google-generativeai is not installed. Run: pip install google-generativeai")
-
         api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is not set in your environment.")
