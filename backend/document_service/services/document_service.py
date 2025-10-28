@@ -1,6 +1,6 @@
 import uuid
 from typing import List, Optional
-from document_service.models import DocumentCreate, DocumentUpdate, DocumentResponse
+from document_service.models import DocumentCreate, DocumentResponse
 from document_service.database import get_db_connection
 import psycopg2
 from datetime import datetime

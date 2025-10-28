@@ -4,6 +4,8 @@ from note_service.services.summarize_service import SummarizeService
 from note_service.models.models import NoteCreate, NoteUpdate, NoteResponse
 
 from typing import List, Optional
+from note_service.services.note_service import NoteService
+from note_service.models.models import NoteCreate, NoteUpdate, NoteResponse
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 import os
