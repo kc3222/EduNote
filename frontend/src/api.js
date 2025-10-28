@@ -25,30 +25,23 @@ export async function login(email, password) {
     return res.json();
   }
 
-export async function createNote(noteData) {
-  const res = await fetch(`/notes`, {
+export async function createNote(payload) {
+  const res = await fetch(`${NOTES_API_BASE}/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(noteData),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to create note");
-  }
+  if (!res.ok) throw new Error(`Failed to create note (${res.status})`);
   return res.json();
 }
 
-export async function updateNote(noteId, noteData) {
-  console.log("Updating note:", noteId, noteData);
-  const res = await fetch(`/notes/${noteId}`, {
+export async function updateNote(id, payload) {
+  const res = await fetch(`${NOTES_API_BASE}/notes/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(noteData),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to update note");
-  }
+  if (!res.ok) throw new Error(`Failed to update note (${res.status})`);
   return res.json();
 }
 
@@ -62,11 +55,28 @@ export async function getNote(noteId) {
 }
 
 export async function getUserNotes(ownerId) {
-  const res = await fetch(`/notes?owner_id=${ownerId}`);
+  const res = await fetch(`${NOTES_API_BASE}/notes?owner_id=${encodeURIComponent(ownerId)}`);
+  if (!res.ok) throw new Error(`Failed to fetch notes (${res.status})`);
+  return res.json();
+}
+
+export async function summarizeNote(noteId) {
+  const res = await fetch(`/notes/${noteId}/summarize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to get user notes");
+    throw new Error(data.detail || "Failed to summarize note");
   }
+  return res.json();
+}
+
+const NOTES_API_BASE = import.meta.env.VITE_NOTES_API_BASE || "http://localhost:8001";
+
+export async function summarizeNotePersist(id) {
+  const res = await fetch(`${NOTES_API_BASE}/notes/${id}/summary`, { method: "PUT" });
+  if (!res.ok) throw new Error(`Summarize failed (${res.status})`);
   return res.json();
 }
 
@@ -111,4 +121,3 @@ export async function deleteDocument(documentId) {
   }
   return res.json();
 }
-  

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import MarkdownEditor from "./MarkdownEditor";
-import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon, X } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
-import { createNote, updateNote, getUserNotes, getUserDocuments } from "./api";
+import { createNote, updateNote, getUserNotes, getUserDocuments, summarizeNotePersist } from "./api";
 import CreateFlashcardsPage from "./CreateFlashcardsPage";
 import Chat from "./Chat";
 import DocumentUpload from "./components/DocumentUpload";
@@ -22,6 +22,12 @@ export default function MainPage({ user, onLogout }) {
   const [notesError, setNotesError] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState("");
+  
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [showSummaryTab, setShowSummaryTab] = useState(false);
+  const [summaryText, setSummaryText] = useState("");
+  const [summaryError, setSummaryError] = useState("");
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
   
   // Document upload states
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -139,8 +145,42 @@ export default function MainPage({ user, onLogout }) {
     }
     
     setCurrentNote(note);
+    setShowSummaryTab(false);
+    setSummaryText("");
+    setSummaryError("");
+    setSummaryLoaded(false);
+
+    if (note?.id && !note.isTemporary) {
+      fetch(`http://localhost:8001/notes/${note.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const s = data?.summary_json;
+          if (s) {
+            const text =
+              (s.tldr ? `**TL;DR:** ${s.tldr}\n\n` : "") +
+              (Array.isArray(s.key_points) && s.key_points.length
+                ? `**Key Points:**\n- ${s.key_points.join("\n- ")}\n\n`
+                : "") +
+              (Array.isArray(s.action_items) && s.action_items.length
+                ? `**Action Items:**\n- ${s.action_items.join("\n- ")}\n\n`
+                : "") +
+              (Array.isArray(s.questions) && s.questions.length
+                ? `**Questions:**\n- ${s.questions.join("\n- ")}\n\n`
+                : "") +
+              (Array.isArray(s.keywords) && s.keywords.length
+                ? `**Keywords:** ${s.keywords.join(", ")}`
+                : "");
+            setSummaryText(text || "");
+            setSummaryLoaded(true);
+          }
+        })
+        .catch(() => {});
+    }
     setNoteContent(note.markdown);
     setActiveContent({ type: 'note', id: note.id });
+    setShowSummaryTab(false); // hide previous summary by default when switching notes
+    setSummaryText("");
+    setSummaryError("");
   };
 
   // Helper function to check if array has content
@@ -251,6 +291,51 @@ export default function MainPage({ user, onLogout }) {
     
     // Clear status message after 3 seconds
     setTimeout(() => setSaveStatus(""), 3000);
+  };
+
+  const handleSummaryClickHardwired = async () => {
+    setSummaryError("");
+    if (!currentNote?.id || currentNote?.isTemporary) {
+      setShowSummaryTab(true);
+      setSummaryText("");
+      setSummaryError("Save the note first, then summarize.");
+      return;
+    }
+
+    setIsSummarizing(true);
+    setShowSummaryTab(true);
+    try {
+      const res = await fetch(`http://localhost:8001/notes/${currentNote.id}/summary`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+
+      const s = body?.summary || {};
+      const text =
+        (s.tldr ? `**TL;DR:** ${s.tldr}\n\n` : "") +
+        (Array.isArray(s.key_points) && s.key_points.length
+          ? `**Key Points:**\n- ${s.key_points.join("\n- ")}\n\n`
+          : "") +
+        (Array.isArray(s.action_items) && s.action_items.length
+          ? `**Action Items:**\n- ${s.action_items.join("\n- ")}\n\n`
+          : "") +
+        (Array.isArray(s.questions) && s.questions.length
+          ? `**Questions:**\n- ${s.questions.join("\n- ")}\n\n`
+          : "") +
+        (Array.isArray(s.keywords) && s.keywords.length
+          ? `**Keywords:** ${s.keywords.join(", ")}`
+          : "");
+
+      setSummaryText(text || "No summary returned.");
+      setSummaryLoaded(true);
+    } catch (e) {
+      setSummaryText("");
+      setSummaryError(e.message || "Summarize failed.");
+    } finally {
+      setIsSummarizing(false);
+    }
   };
 
   // Handle saving the note
@@ -374,6 +459,16 @@ export default function MainPage({ user, onLogout }) {
   const handleDocumentSelect = (document) => {
     setSelectedDocument(document);
   };
+
+  const openSummaryTab = (runSummarize = false) => {
+    setShowSummaryTab(true);
+    if (runSummarize) handleSummaryClickHardwired();
+  };
+
+  const closeSummaryTab = () => {
+    setShowSummaryTab(false);
+  };
+
 
 
   if (activeContent?.type === "flashcards") {
@@ -585,7 +680,16 @@ export default function MainPage({ user, onLogout }) {
                   </>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
-                    <RailButton icon={<NotebookPen className="h-4 w-4" />} label="Notes" showLabel={true} />
+                    <button
+                      onClick={handleSummaryClickHardwired}
+                      className={`group w-[52px] ${rightOpen ? "mb-1" : "mb-0"} flex flex-col items-center gap-1 text-[11px] font-medium text-slate-600 focus:outline-none`}
+                      id="summary-btn"
+                    >
+                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-50 ring-1 ring-slate-200 shadow-sm group-hover:bg-slate-100">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      {rightOpen && <span>{isSummarizing ? "Summ…" : "Summary"}</span>}
+                    </button>
                   </div>
                 )}
                 <button
@@ -648,14 +752,66 @@ export default function MainPage({ user, onLogout }) {
                   )}
                 </div>
               </div>
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)]">
-                <MarkdownEditor 
-                  key={currentNote?.id || 'new-note'}
-                  className="h-full" 
-                  initialMarkdown={noteContent}
-                  onContentChange={handleContentChange}
-                  onSave={handleSave}
-                />
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)] flex flex-col overflow-hidden">
+                {/* Top: Editor (full height if summary is closed; half height if open) */}
+                <div className={showSummaryTab ? "h-1/2 min-h-0" : "h-full min-h-0"}>
+                  {/* Make the editor area scroll when text is long; ensure same font */}
+                  <div className="h-full overflow-auto font-sans text-slate-800">
+                    <MarkdownEditor
+                      key={currentNote?.id || "new-note"}
+                      className="h-full font-sans text-slate-800"
+                      initialMarkdown={noteContent}
+                      onContentChange={handleContentChange}
+                      onSave={handleSave}
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom: Summary Tab (visible only when open) */}
+                {showSummaryTab && (
+                  <div className="h-1/2 min-h-0 border-t border-slate-200 flex flex-col">
+                    {/* Tab header */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-slate-600" />
+                        <span className="text-sm font-medium text-slate-700">
+                          {isSummarizing ? "Generating summary…" : summaryLoaded ? "Summary (Saved)" : "Summary"}
+                        </span>
+                        {!isSummarizing && (
+                          <button
+                            onClick={handleSummaryClickHardwired}
+                            className="ml-2 text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                          >
+                            Refresh
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={closeSummaryTab}
+                        className="p-1 rounded hover:bg-slate-200"
+                        title="Close summary"
+                      >
+                        <X className="h-4 w-4 text-slate-600" />
+                      </button>
+                    </div>
+
+                    {/* Tab body: same font as editor + scrollable */}
+                    <div className="p-3 bg-white flex-1 min-h-0 overflow-auto text-sm font-sans text-slate-800 leading-relaxed whitespace-pre-wrap">
+                      {summaryError && <div className="text-red-600 mb-2">{summaryError}</div>}
+                      {isSummarizing && !summaryText && !summaryError && (
+                        <div className="text-slate-500 italic">Working on it…</div>
+                      )}
+                      {!isSummarizing && !summaryText && !summaryError && (
+                        <div className="text-slate-400 italic">
+                          No summary yet. Click “Refresh” to generate one.
+                        </div>
+                      )}
+                      {summaryText && (
+                        <div>{summaryText}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -710,7 +866,21 @@ export default function MainPage({ user, onLogout }) {
                 >
                   {rightOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </button>
-                <RailButton icon={<FileText className="h-4 w-4" />} label="Summary" showLabel={rightOpen} />
+                <RailButton
+                  icon={<FileText className="h-4 w-4" />}
+                  label={isSummarizing ? "Summary" : "Summary"}
+                  showLabel={rightOpen}
+                  onClick={() => {
+                    // If we already have saved/cached summary, just open the tab.
+                    if (summaryLoaded || summaryText) {
+                      setShowSummaryTab(true);
+                    } else {
+                      // No cache yet → open and generate once.
+                      setShowSummaryTab(true);
+                      handleSummaryClickHardwired();
+                    }
+                  }}
+                />
                 <RailButton icon={<ListChecks className="h-4 w-4" />} label="Quizzes" showLabel={rightOpen} />
                 <RailButton icon={<Layers className="h-4 w-4" />} label="Flashcards" showLabel={rightOpen} onClick={() => setActiveContent({ type: "flashcards", lectureId: null, id: null })}/>
                 <RailButton icon={<MessageCircle className="h-4 w-4" />} label="Chat" showLabel={rightOpen} onClick={() => setActiveContent({ type: "chat" })}/>

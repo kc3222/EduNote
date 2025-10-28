@@ -4,6 +4,47 @@ from note_service.models.models import NoteCreate, NoteUpdate, NoteResponse
 import uuid
 from datetime import datetime
 import json
+from typing import Any, Dict, List
+
+def _row_to_dict(cur, row) -> Dict[str, Any]:
+    """
+    Convert a DB row to a dict regardless of cursor factory.
+    Works with tuple rows (default cursor) or dict-like rows (RealDictCursor).
+    """
+    if isinstance(row, dict):
+        return dict(row)
+
+    # Fallback for tuple rows
+    cols = []
+    for d in cur.description:
+        # psycopg2: d can be a sequence or an object with .name
+        if hasattr(d, "name"):
+            cols.append(d.name)
+        else:
+            cols.append(d[0])
+    return dict(zip(cols, row))
+
+
+def _to_list(val) -> List[str]:
+    """
+    Normalize a DB column that may be ARRAY, JSONB, text JSON, or None to a list[str].
+    """
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
+    if isinstance(val, tuple):
+        return list(val)
+    if isinstance(val, str):
+        # try to parse JSON text like '["a","b"]'
+        try:
+            parsed = json.loads(val)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            # treat as single string element
+            return [val]
+    return [str(val)]
 
 class NoteDAO:
     """Data Access Object for note operations"""
@@ -323,4 +364,115 @@ class NoteDAO:
         except Exception as e:
             raise e
         finally:
+            conn.close()
+
+    def get_note(self, note_id: str) -> Dict[str, Any] | None:
+        conn, cur = get_db_cursor()
+        try:
+            cur.execute(
+                """
+                SELECT
+                    id, owner_id, title, markdown, document_id,
+                    quiz_ids, flashcard_ids, chat_id, is_archived,
+                    created_at, updated_at,
+                    summary_json, summary_updated_at
+                FROM note
+                WHERE id = %s
+                """,
+                (note_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+
+            rec = _row_to_dict(cur, row)
+
+            # Normalize types
+            rec["quiz_ids"] = _to_list(rec.get("quiz_ids"))
+            rec["flashcard_ids"] = _to_list(rec.get("flashcard_ids"))
+
+            sj = rec.get("summary_json")
+            if isinstance(sj, str):
+                try:
+                    rec["summary_json"] = json.loads(sj)
+                except Exception:
+                    rec["summary_json"] = None
+
+            # Booleans might be ints in some setups
+            rec["is_archived"] = bool(rec.get("is_archived"))
+
+            return rec
+        finally:
+            cur.close()
+            conn.close()
+
+    def get_notes(self, owner_id: str | None = None, is_archived: bool | None = None) -> List[Dict[str, Any]]:
+        conn, cur = get_db_cursor()
+        try:
+            clauses = []
+            params: List[Any] = []
+
+            if owner_id:
+                clauses.append("owner_id = %s")
+                params.append(owner_id)
+            if is_archived is not None:
+                clauses.append("is_archived = %s")
+                params.append(is_archived)
+
+            where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+            cur.execute(
+                f"""
+                SELECT
+                    id, owner_id, title, markdown, document_id,
+                    quiz_ids, flashcard_ids, chat_id, is_archived,
+                    created_at, updated_at,
+                    summary_json, summary_updated_at
+                FROM note
+                {where_sql}
+                ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST
+                """,
+                tuple(params),
+            )
+
+            rows = cur.fetchall() or []
+            out: List[Dict[str, Any]] = []
+
+            for r in rows:
+                rec = _row_to_dict(cur, r)
+
+                rec["quiz_ids"] = _to_list(rec.get("quiz_ids"))
+                rec["flashcard_ids"] = _to_list(rec.get("flashcard_ids"))
+
+                sj = rec.get("summary_json")
+                if isinstance(sj, str):
+                    try:
+                        rec["summary_json"] = json.loads(sj)
+                    except Exception:
+                        rec["summary_json"] = None
+
+                rec["is_archived"] = bool(rec.get("is_archived"))
+
+                out.append(rec)
+
+            return out
+        finally:
+            cur.close()
+            conn.close()
+
+    def update_summary(self, note_id: str, summary_dict: Dict[str, Any]) -> None:
+        conn, cur = get_db_cursor()
+        try:
+            cur.execute(
+                """
+                UPDATE note
+                SET summary_json = %s,
+                    summary_updated_at = NOW()
+                WHERE id = %s
+                """,
+                (json.dumps(summary_dict), note_id),
+            )
+            conn.commit()
+        finally:
+            cur.close()
             conn.close()

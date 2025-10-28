@@ -24,11 +24,17 @@ class NoteUpdate(BaseModel):
     chat_id: Optional[str] = None
     is_archived: Optional[bool] = None
 
-class NoteResponse(NoteBase):
+class NoteResponse(BaseModel):
     id: str
     owner_id: str
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
+    title: str
+    markdown: Optional[str] = None
+    document_id: Optional[str] = None
+    quiz_ids: List[str] = []
+    flashcard_ids: List[str] = []
+    chat_id: Optional[str] = None
+    is_archived: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    summary_json: Optional[dict] = None
+    summary_updated_at: Optional[datetime] = None
