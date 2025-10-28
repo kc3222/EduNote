@@ -1,12 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from typing import Optional
 import argparse
 import uvicorn
+import os
 
-from auth import verify_credentials, create_jwt, parse_jwt
-from schemas import LoginRequest, UserPublic
+from auth_service.auth import verify_credentials, create_jwt, parse_jwt
+from auth_service.schemas import LoginRequest, UserPublic
 
 app = FastAPI()
 

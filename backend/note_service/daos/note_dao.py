@@ -1,6 +1,6 @@
 from typing import List, Optional
-from database import get_db_cursor
-from models.models import NoteCreate, NoteUpdate, NoteResponse
+from note_service.database import get_db_cursor
+from note_service.models.models import NoteCreate, NoteUpdate, NoteResponse
 import uuid
 from datetime import datetime
 import json

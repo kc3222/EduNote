@@ -12,8 +12,8 @@ import mimetypes
 from datetime import datetime
 import json
 
-from models import DocumentResponse, DocumentCreate
-from services.document_service import DocumentService
+from document_service.models import DocumentResponse, DocumentCreate
+from document_service.services.document_service import DocumentService
 
 app = FastAPI(title="Document Service", version="1.0.0")
 

@@ -1,6 +1,6 @@
 from typing import List, Optional
-from daos.note_dao import NoteDAO
-from models.models import NoteCreate, NoteUpdate, NoteResponse
+from note_service.daos.note_dao import NoteDAO
+from note_service.models.models import NoteCreate, NoteUpdate, NoteResponse
 from fastapi import HTTPException
 
 class NoteService:
