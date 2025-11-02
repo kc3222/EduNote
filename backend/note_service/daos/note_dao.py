@@ -58,7 +58,7 @@ class NoteDAO:
             cur.execute("""
                 INSERT INTO note (id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at
+                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at, summary_json, summary_updated_at
             """, (note_id, note.owner_id, note.document_id, note.title, note.markdown, 
                   note.quiz_ids, note.flashcard_ids, note.chat_id, note.is_archived))
             
@@ -84,8 +84,6 @@ class NoteDAO:
                         note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids'])
                 elif isinstance(note_dict['flashcard_ids'], dict):
                     note_dict['flashcard_ids'] = []
-            
-            print(f"After parsing - quiz_ids: {note_dict.get('quiz_ids')}, flashcard_ids: {note_dict.get('flashcard_ids')}")
             
             return NoteResponse(**note_dict)
         except Exception as e:
@@ -259,7 +257,7 @@ class NoteDAO:
                 UPDATE note 
                 SET {', '.join(update_fields)}
                 WHERE id = %s
-                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at
+                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at, summary_json, summary_updated_at
             """
             
             cur.execute(query, params)
@@ -270,26 +268,64 @@ class NoteDAO:
             
             conn.commit()
             
-            # Convert result to dict and parse JSON arrays
+            # Convert result to dict and handle arrays
             note_dict = dict(result)
+            
+            # Handle arrays
             if 'quiz_ids' in note_dict:
                 if isinstance(note_dict['quiz_ids'], str):
                     if note_dict['quiz_ids'] == '{}':
                         note_dict['quiz_ids'] = []
                     else:
-                        note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids'])
+                        try:
+                            note_dict['quiz_ids'] = json.loads(note_dict['quiz_ids'])
+                        except:
+                            note_dict['quiz_ids'] = []
                 elif isinstance(note_dict['quiz_ids'], dict):
                     note_dict['quiz_ids'] = []
+                elif note_dict['quiz_ids'] is None:
+                    note_dict['quiz_ids'] = []
+                # If it's already a list, keep it as is
+            else:
+                note_dict['quiz_ids'] = []
+                
             if 'flashcard_ids' in note_dict:
                 if isinstance(note_dict['flashcard_ids'], str):
                     if note_dict['flashcard_ids'] == '{}':
                         note_dict['flashcard_ids'] = []
                     else:
-                        note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids'])
+                        try:
+                            note_dict['flashcard_ids'] = json.loads(note_dict['flashcard_ids'])
+                        except:
+                            note_dict['flashcard_ids'] = []
                 elif isinstance(note_dict['flashcard_ids'], dict):
                     note_dict['flashcard_ids'] = []
+                elif note_dict['flashcard_ids'] is None:
+                    note_dict['flashcard_ids'] = []
+                # If it's already a list, keep it as is
+            else:
+                note_dict['flashcard_ids'] = []
             
-            return NoteResponse(**note_dict)
+            # Add default values for summary columns (in case they don't exist in DB)
+            if 'summary_json' not in note_dict:
+                note_dict['summary_json'] = None
+            elif isinstance(note_dict['summary_json'], str):
+                try:
+                    note_dict['summary_json'] = json.loads(note_dict['summary_json'])
+                except:
+                    note_dict['summary_json'] = None
+            
+            if 'summary_updated_at' not in note_dict:
+                note_dict['summary_updated_at'] = None
+            
+            # Ensure markdown is not None if required
+            if 'markdown' not in note_dict or note_dict['markdown'] is None:
+                note_dict['markdown'] = ''
+            
+            try:
+                return NoteResponse(**note_dict)
+            except Exception as e:
+                raise e
         except Exception as e:
             conn.rollback()
             raise e

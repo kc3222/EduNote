@@ -5,8 +5,8 @@ import argparse
 import uvicorn
 import os
 
-from auth_service.auth import verify_credentials, create_jwt, parse_jwt
-from auth_service.schemas import LoginRequest, UserPublic
+from auth_service.auth import verify_credentials, create_jwt, parse_jwt, user_id_for_email, create_user
+from auth_service.schemas import LoginRequest, SignupRequest, UserPublic
 
 app = FastAPI(title="Auth Service", version="1.0.0")
 
@@ -49,9 +49,14 @@ def get_current_user(request: Request) -> Optional[UserPublic]:
         return None
     sub = payload.get("sub") or ""
     uid, email = _unpack_sub(sub)
-    if not uid:
+    if not uid or not email:
         return None
-    return UserPublic(id=uid, email=email)
+    # Always use the current user_id_for_email to ensure correct ID
+    # This fixes the issue where old tokens have outdated user IDs
+    current_uid = user_id_for_email(email)
+    if not current_uid:
+        return None
+    return UserPublic(id=current_uid, email=email)
 
 @app.post("/auth/login", response_model=UserPublic)
 def login(payload: LoginRequest, response: Response):
@@ -62,6 +67,33 @@ def login(payload: LoginRequest, response: Response):
     user = verify_credentials(payload.email, payload.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Encode both id and email into sub so we can reconstruct the user from the cookie later.
+    sub_value = f"{user['id']}|{user['email']}"
+    token = create_jwt(sub=sub_value)
+
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=False,   # True when served over HTTPS
+        samesite="lax", # good for same-site dev
+        max_age=COOKIE_MAX_AGE,
+        path="/",
+    )
+
+    # Return basic user info; cookie is what keeps you logged in on reload
+    return UserPublic(id=user["id"], email=user["email"])
+
+@app.post("/auth/register", response_model=UserPublic)
+def register(payload: SignupRequest, response: Response):
+    """
+    Creates a new user account. On success, sets an HttpOnly cookie with the JWT.
+    Returns a minimal user object (no token in body).
+    """
+    user = create_user(payload.email, payload.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Email already exists or registration failed")
 
     # Encode both id and email into sub so we can reconstruct the user from the cookie later.
     sub_value = f"{user['id']}|{user['email']}"
