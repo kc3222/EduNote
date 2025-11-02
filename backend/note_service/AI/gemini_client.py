@@ -12,6 +12,10 @@ import json
 import re
 from typing import Any, Dict, Optional
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --------------------------
 # Robust JSON parsing helpers
