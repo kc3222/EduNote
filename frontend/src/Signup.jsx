@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { login, me, logout } from "./api";
+import { signup, me, logout } from "./api";
 
-export default function Login({ onLogin, onSwitchToSignup }) {
-  const [email, setEmail] = useState("demo@user.com");
-  const [password, setPassword] = useState("password123");
+export default function Signup({ onLogin, onSwitchToLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
         // If me() fails, user is not logged in
         setUser(null);
       } finally {
-        setLoading(false); // Always set loading to false
+        setLoading(false);
       }
     })();
   }, [onLogin]);
@@ -30,7 +30,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
     e.preventDefault();
     setErr("");
     try {
-      const u = await login(email, password);
+      const u = await signup(email, password);
       setUser(u);
       // Call onLogin callback to notify parent component
       if (onLogin) {
@@ -72,7 +72,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
   return (
     <div style={styles.fullscreen}>
       <form style={styles.card} onSubmit={handleSubmit}>
-        <h2>Sign in</h2>
+        <h2>Sign up</h2>
         <label style={styles.label}>Email</label>
         <input
           style={styles.input}
@@ -88,15 +88,12 @@ export default function Login({ onLogin, onSwitchToSignup }) {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
+          autoComplete="new-password"
           required
         />
         {err && <div style={styles.error}>{err}</div>}
-        <button style={styles.button} type="submit">Log in</button>
-        <button style={styles.signupButton} type="button" onClick={() => onSwitchToSignup?.()}>Sign up</button>
-        <p style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-          Try <code>demo@user.com</code> / <code>password123</code>
-        </p>
+        <button style={styles.button} type="submit">Sign up</button>
+        <button style={styles.loginButton} type="button" onClick={() => onSwitchToLogin?.()}>Sign in</button>
       </form>
     </div>
   );
@@ -148,7 +145,7 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 6px 14px rgba(99,102,241,0.20)"
   },
-  signupButton: {
+  loginButton: {
     marginTop: 10,
     width: "100%",
     padding: "12px 14px",
@@ -177,4 +174,4 @@ const styles = {
     background: "linear-gradient(135deg, #FDE2E4 0%, #E2F0CB 45%, #CDE7F0 100%)"
   }
 };
-  
+

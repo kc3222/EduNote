@@ -6,6 +6,10 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str

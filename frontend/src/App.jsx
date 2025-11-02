@@ -1,10 +1,12 @@
 import { useState } from "react";
 import Login from "./Login";
+import Signup from "./Signup";
 import MainPage from "./MainPage";
 import { logout } from "./api";
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [showSignup, setShowSignup] = useState(false);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -24,5 +26,9 @@ export default function App() {
     return <MainPage user={user} onLogout={handleLogout} />;
   }
 
-  return <Login onLogin={handleLogin} />;
+  if (showSignup) {
+    return <Signup onLogin={handleLogin} onSwitchToLogin={() => setShowSignup(false)} />;
+  }
+
+  return <Login onLogin={handleLogin} onSwitchToSignup={() => setShowSignup(true)} />;
 }

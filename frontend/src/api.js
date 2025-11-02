@@ -25,6 +25,20 @@ export async function login(email, password) {
     return res.json();
   }
 
+export async function signup(email, password) {
+    const res = await fetch(`/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // send/receive cookie
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Signup failed");
+    }
+    return res.json();
+  }
+
 export async function createNote(payload) {
   const res = await fetch(`${NOTES_API_BASE}/notes`, {
     method: "POST",
