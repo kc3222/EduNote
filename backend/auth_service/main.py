@@ -5,7 +5,7 @@ import argparse
 import uvicorn
 import os
 
-from auth_service.auth import verify_credentials, create_jwt, parse_jwt
+from auth_service.auth import verify_credentials, create_jwt, parse_jwt, user_id_for_email
 from auth_service.schemas import LoginRequest, UserPublic
 
 app = FastAPI(title="Auth Service", version="1.0.0")
@@ -49,9 +49,14 @@ def get_current_user(request: Request) -> Optional[UserPublic]:
         return None
     sub = payload.get("sub") or ""
     uid, email = _unpack_sub(sub)
-    if not uid:
+    if not uid or not email:
         return None
-    return UserPublic(id=uid, email=email)
+    # Always use the current user_id_for_email to ensure correct ID
+    # This fixes the issue where old tokens have outdated user IDs
+    current_uid = user_id_for_email(email)
+    if not current_uid:
+        return None
+    return UserPublic(id=current_uid, email=email)
 
 @app.post("/auth/login", response_model=UserPublic)
 def login(payload: LoginRequest, response: Response):

@@ -1,10 +1,10 @@
 import os
-import uuid
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 
 import jwt
 from passlib.context import CryptContext
+from auth_service.database import get_db_cursor
 
 # ---------- Password hashing ----------
 pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
@@ -18,46 +18,54 @@ def verify_password(plain: str, hashed: str) -> bool:
     except Exception:
         return False
 
-# ---------- Deterministic user id from email ----------
-# Use a fixed namespace so the same email -> same UUID every boot.
-USER_NS = uuid.UUID("3e4666bf-d5e5-4aa7-b8ce-cefe41c7568a")
-
-def user_id_for_email(email: str) -> str:
-    return str(uuid.uuid5(USER_NS, (email or "").strip().lower()))
-
-def make_user(email: str, password_plain: str) -> Dict:
-    return {
-        "id": user_id_for_email(email),
-        "email": email,
-        "password_hash": hash_password(password_plain),
-    }
-
-# ---------- Demo user (matches your UI) ----------
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "demo@user.com")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "password123")
-
-USERS_BY_EMAIL: Dict[str, Dict] = {
-    ADMIN_EMAIL: make_user(ADMIN_EMAIL, ADMIN_PASSWORD)
-}
-
+# ---------- Database user lookup ----------
 def get_user_by_email(email: str) -> Optional[Dict]:
-    return USERS_BY_EMAIL.get(email)
+    """
+    Query the database for a user by email.
+    Returns user dict with 'id', 'email', 'password_hash' if found, else None.
+    """
+    conn, cur = get_db_cursor()
+    try:
+        cur.execute("SELECT id, email, password FROM app_user WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        # Convert row to dict
+        return {
+            "id": str(row["id"]),  # Ensure UUID is string
+            "email": row["email"],
+            "password_hash": row["password"],  # Database stores as 'password'
+        }
+    except Exception as e:
+        print(f"Error querying user: {e}")
+        return None
+    finally:
+        cur.close()
+        conn.close()
 
 def verify_credentials(email: str, password: str) -> Optional[Dict]:
     """
+    Verify credentials against database.
     Return full user dict (with 'id', 'email', 'password_hash') if valid, else None.
-    Guarantees 'id' exists even if the in-memory map was missing it.
     """
     user = get_user_by_email(email)
     if not user:
         return None
-    # Hardening: ensure 'id' key exists
-    if "id" not in user or not user["id"]:
-        user = {**user, "id": user_id_for_email(email)}
-        USERS_BY_EMAIL[email] = user  # write back to cache
+    
     if not verify_password(password, user["password_hash"]):
         return None
+    
     return user
+
+def user_id_for_email(email: str) -> Optional[str]:
+    """
+    Get user ID from database for a given email.
+    Returns the user ID if found, otherwise returns None.
+    """
+    user = get_user_by_email(email)
+    if user:
+        return user["id"]
+    return None
 
 # ---------- JWT ----------
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
