@@ -13,6 +13,7 @@ DATABASE_CONFIG = {
 def get_db_connection():
     """Get database connection"""
     return psycopg2.connect(**DATABASE_CONFIG)
+
 def get_db_cursor():
     """Get database cursor with dict-like access"""
     conn = get_db_connection()
