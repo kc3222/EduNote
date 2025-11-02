@@ -93,7 +93,7 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
         />
         {err && <div style={styles.error}>{err}</div>}
         <button style={styles.button} type="submit">Sign up</button>
-        <button style={styles.loginButton} type="button" onClick={() => onSwitchToLogin?.()}>Sign in</button>
+        <button style={styles.loginButton} type="button" onClick={() => onSwitchToLogin?.()}>Back</button>
       </form>
     </div>
   );
