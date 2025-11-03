@@ -7,6 +7,7 @@ import CreateFlashcardsPage from "./CreateFlashcardsPage";
 import Chat from "./Chat";
 import DocumentUpload from "./components/DocumentUpload";
 import PDFViewer from "./components/PDFViewer";
+import Toast from "./components/Toast";
 
 export default function MainPage({ user, onLogout }) {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -745,11 +746,6 @@ export default function MainPage({ user, onLogout }) {
                     <Save className="h-4 w-4" /> 
                     {isSaving ? "Saving..." : "Save"}
                   </button>
-                  {saveStatus && (
-                    <span className={`text-xs ${saveStatus.includes("Error") ? "text-red-600" : "text-green-600"}`}>
-                      {saveStatus}
-                    </span>
-                  )}
                 </div>
               </div>
               <div className="mt-3 rounded-xl border border-slate-200 bg-white h-[calc(100vh-180px)] flex flex-col overflow-hidden">
@@ -904,6 +900,13 @@ export default function MainPage({ user, onLogout }) {
           onClose={() => setShowUploadModal(false)}
         />
       )}
+      
+      {/* Toast Notification */}
+      <Toast 
+        message={saveStatus} 
+        type={saveStatus?.toLowerCase().includes("error") ? "error" : "success"}
+        onClose={() => setSaveStatus("")}
+      />
     </div>
   );
 }
