@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import MarkdownEditor from "./MarkdownEditor";
-import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon, X } from "lucide-react";
+import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon, X, Trash2 } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
-import { createNote, updateNote, getUserNotes, getUserDocuments, summarizeNotePersist } from "./api";
+import { createNote, updateNote, getUserNotes, getUserDocuments, summarizeNotePersist, deleteNote } from "./api";
 import CreateFlashcardsPage from "./CreateFlashcardsPage";
 import Chat from "./Chat";
 import DocumentUpload from "./components/DocumentUpload";
@@ -35,6 +35,9 @@ export default function MainPage({ user, onLogout }) {
   const [documents, setDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const leftW = leftOpen ? "w-80" : "w-[64px]";
   const rightW = rightOpen ? "w-[64px]" : "w-[24px]";
@@ -430,6 +433,68 @@ export default function MainPage({ user, onLogout }) {
     }
   };
 
+  // Handle delete button click - show confirmation
+  const handleDeleteClick = () => {
+    if (!currentNote) {
+      setSaveStatus("No note to delete");
+      setTimeout(() => setSaveStatus(""), 3000);
+      return;
+    }
+
+    // Can't delete temporary notes (they should be discarded instead)
+    if (currentNote.isTemporary) {
+      handleDiscardTemporaryNote(currentNote.id);
+      setSaveStatus("Unsaved note discarded");
+      setTimeout(() => setSaveStatus(""), 3000);
+      return;
+    }
+
+    // Show confirmation dialog for saved notes
+    setShowDeleteConfirm(true);
+  };
+
+  // Handle confirmed deletion
+  const handleConfirmDelete = async () => {
+    if (!currentNote || !user?.id) {
+      setShowDeleteConfirm(false);
+      return;
+    }
+
+    try {
+      await deleteNote(currentNote.id);
+      setSaveStatus("Note deleted successfully!");
+      
+      // Remove note from lectures list
+      setLectures(prevLectures => 
+        prevLectures.map(lecture => {
+          // Filter out the deleted note from notes array
+          const filteredNotes = lecture.notes.filter(note => note.id !== currentNote.id);
+          // If this lecture only had this note, remove the lecture entirely
+          if (filteredNotes.length === 0 && lecture.id === currentNote.id) {
+            return null;
+          }
+          return {
+            ...lecture,
+            notes: filteredNotes
+          };
+        }).filter(lecture => lecture !== null)
+      );
+      
+      // Clear the current note and editor
+      setCurrentNote(null);
+      setNoteContent("");
+      setActiveContent(null);
+      setShowSummaryTab(false);
+      setSummaryText("");
+      setSummaryError("");
+    } catch (error) {
+      setSaveStatus(`Error: ${error.message}`);
+    } finally {
+      setShowDeleteConfirm(false);
+      setTimeout(() => setSaveStatus(""), 3000);
+    }
+  };
+
   // Handle upload completion
   const handleUploadComplete = async (uploadedFiles) => {
     console.log("Upload completed! Files:", uploadedFiles);
@@ -739,6 +804,14 @@ export default function MainPage({ user, onLogout }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
+                    onClick={handleDeleteClick}
+                    disabled={!currentNote}
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-red-50 hover:text-red-700 hover:ring-red-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:text-slate-700 disabled:hover:ring-slate-200"
+                  >
+                    <Trash2 className="h-4 w-4" /> 
+                    Delete
+                  </button>
+                  <button 
                     onClick={() => handleSave()}
                     disabled={isSaving}
                     className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -899,6 +972,58 @@ export default function MainPage({ user, onLogout }) {
           onUploadComplete={handleUploadComplete}
           onClose={() => setShowUploadModal(false)}
         />
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Delete Note</h2>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-700 mb-2">
+                Are you sure you want to delete <span className="font-semibold">"{currentNote?.title}"</span>?
+              </p>
+              <p className="text-sm text-gray-500">
+                All content in this note will be permanently deleted.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Note
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Toast Notification */}

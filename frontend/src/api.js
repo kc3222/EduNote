@@ -74,6 +74,17 @@ export async function getUserNotes(ownerId) {
   return res.json();
 }
 
+export async function deleteNote(noteId) {
+  const res = await fetch(`${NOTES_API_BASE}/notes/${noteId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || `Failed to delete note (${res.status})`);
+  }
+  return res.json();
+}
+
 export async function summarizeNote(noteId) {
   const res = await fetch(`/notes/${noteId}/summarize`, {
     method: "POST",
