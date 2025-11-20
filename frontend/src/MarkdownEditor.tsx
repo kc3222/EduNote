@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MilkdownProvider, Milkdown, useEditor } from "@milkdown/react";
-import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx } from "@milkdown/core";
+import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx, editorViewCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { getMarkdown, replaceAll } from "@milkdown/utils";
@@ -19,13 +19,43 @@ type MarkdownEditorProps = {
   onSave?: (content?: string) => void;           // markdown string (optional)
 };
 
+type InnerEditorProps = MarkdownEditorProps & {
+  onEditorReady?: (editor: Editor | null) => void;
+};
+
+const DEFAULT_FONT_SIZE = "16px";
+const DEFAULT_FONT_FAMILY =
+  "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif";
+const DEFAULT_LINE_HEIGHT = "1.65";
+
+const FONT_SIZE_OPTIONS = [
+  { label: "Small", value: "14px" },
+  { label: "Normal", value: "16px" },
+  { label: "Large", value: "18px" },
+  { label: "Extra Large", value: "20px" },
+  { label: "Presentation", value: "24px" },
+];
+
+const FONT_FAMILY_OPTIONS = [
+  { label: "Sans", value: DEFAULT_FONT_FAMILY },
+  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Mono", value: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" },
+];
+
+const LINE_HEIGHT_OPTIONS = [
+  { label: "Compact", value: "1.4" },
+  { label: "Comfort", value: "1.65" },
+  { label: "Roomy", value: "1.85" },
+];
+
 function InnerEditor({
   initialMarkdown,
   editable = true,
   ariaLabel = "Markdown editor",
   onContentChange,
-  onSave
-}: MarkdownEditorProps) {
+  onSave,
+  onEditorReady,
+}: InnerEditorProps) {
   const editorRef = useRef<Editor | null>(null);
 
   useEditor((root) => {
@@ -55,8 +85,15 @@ function InnerEditor({
       .use(listener);
 
     editorRef.current = editor;
+    onEditorReady?.(editor);
     return editor;
   });
+
+  useEffect(() => {
+    return () => {
+      onEditorReady?.(null);
+    };
+  }, [onEditorReady]);
 
   // Handle Cmd/Ctrl+S -> call onSave with the latest markdown
   useEffect(() => {
@@ -83,6 +120,18 @@ function InnerEditor({
 
 export default function MarkdownEditor(props: MarkdownEditorProps) {
   const { className, style } = props;
+  const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
+  const [fontFamily, setFontFamily] = useState(DEFAULT_FONT_FAMILY);
+  const [lineHeight, setLineHeight] = useState(DEFAULT_LINE_HEIGHT);
+  const editorRef = useRef<Editor | null>(null);
+
+  // CSS variables for editor-wide formatting
+  const editorVariablesStyle = {
+    "--md-font-size": fontSize,
+    "--md-font-family": fontFamily,
+    "--md-line-height": lineHeight,
+  } as React.CSSProperties;
+
   return (
     <div
       className={className}
@@ -93,9 +142,69 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
         ...style,
       }}
     >
+      <div className="markdown-toolbar" role="toolbar" aria-label="Markdown editor formatting toolbar">
+        <div className="markdown-toolbar__group">
+          <label htmlFor="font-size-select" className="markdown-toolbar__label">Font size</label>
+          <select
+            id="font-size-select"
+            className="markdown-toolbar__select"
+            value={fontSize}
+            onChange={(e) => setFontSize(e.target.value)}
+          >
+            {FONT_SIZE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="markdown-toolbar__group">
+          <label htmlFor="font-family-select" className="markdown-toolbar__label">Font style</label>
+          <select
+            id="font-family-select"
+            className="markdown-toolbar__select"
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+          >
+            {FONT_FAMILY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="markdown-toolbar__group">
+          <label htmlFor="line-height-select" className="markdown-toolbar__label">Line spacing</label>
+          <select
+            id="line-height-select"
+            className="markdown-toolbar__select"
+            value={lineHeight}
+            onChange={(e) => setLineHeight(e.target.value)}
+          >
+            {LINE_HEIGHT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       <MilkdownProvider>
-        <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <InnerEditor {...props} />
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            ...editorVariablesStyle,
+          }}
+        >
+          <InnerEditor
+            {...props}
+            onEditorReady={(editor) => {
+              editorRef.current = editor;
+            }}
+          />
         </div>
       </MilkdownProvider>
     </div>
