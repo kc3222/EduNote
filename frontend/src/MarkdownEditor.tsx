@@ -170,51 +170,42 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
       }}
     >
       <div className="markdown-toolbar" role="toolbar" aria-label="Markdown editor formatting toolbar">
-        <div className="markdown-toolbar__group">
-          <label htmlFor="font-size-select" className="markdown-toolbar__label">Font size</label>
-          <select
-            id="font-size-select"
-            className="markdown-toolbar__select"
-            value={fontSize}
-            onChange={(e) => handleFontSizeChange(e.target.value)}
-          >
-            {FONT_SIZE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="markdown-toolbar__group">
-          <label htmlFor="font-family-select" className="markdown-toolbar__label">Font style</label>
-          <select
-            id="font-family-select"
-            className="markdown-toolbar__select"
-            value={fontFamily}
-            onChange={(e) => handleFontFamilyChange(e.target.value)}
-          >
-            {FONT_FAMILY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="markdown-toolbar__group">
-          <label htmlFor="line-height-select" className="markdown-toolbar__label">Line spacing</label>
-          <select
-            id="line-height-select"
-            className="markdown-toolbar__select"
-            value={lineHeight}
-            onChange={(e) => handleLineHeightChange(e.target.value)}
-          >
-            {LINE_HEIGHT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          id="font-size-select"
+          className="markdown-toolbar__select"
+          value={fontSize}
+          onChange={(e) => handleFontSizeChange(e.target.value)}
+        >
+          {FONT_SIZE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          id="font-family-select"
+          className="markdown-toolbar__select"
+          value={fontFamily}
+          onChange={(e) => handleFontFamilyChange(e.target.value)}
+        >
+          {FONT_FAMILY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          id="line-height-select"
+          className="markdown-toolbar__select"
+          value={lineHeight}
+          onChange={(e) => handleLineHeightChange(e.target.value)}
+        >
+          {LINE_HEIGHT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
       <MilkdownProvider>
         <div
