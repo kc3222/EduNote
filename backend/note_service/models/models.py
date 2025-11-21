@@ -11,6 +11,9 @@ class NoteBase(BaseModel):
     flashcard_ids: List[str] = []  # List of flashcard UUIDs
     chat_id: Optional[str] = None  # Chat UUID
     is_archived: bool = False
+    font_size: Optional[str] = None
+    font_family: Optional[str] = None
+    line_height: Optional[str] = None
 
 class NoteCreate(NoteBase):
     owner_id: str
@@ -23,6 +26,9 @@ class NoteUpdate(BaseModel):
     flashcard_ids: Optional[List[str]] = None
     chat_id: Optional[str] = None
     is_archived: Optional[bool] = None
+    font_size: Optional[str] = None
+    font_family: Optional[str] = None
+    line_height: Optional[str] = None
 
 class NoteResponse(BaseModel):
     id: str
@@ -38,3 +44,6 @@ class NoteResponse(BaseModel):
     updated_at: Optional[datetime] = None
     summary_json: Optional[dict] = None
     summary_updated_at: Optional[datetime] = None
+    font_size: Optional[str] = None
+    font_family: Optional[str] = None
+    line_height: Optional[str] = None

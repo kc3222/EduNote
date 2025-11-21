@@ -24,6 +24,13 @@ export default function MainPage({ user, onLogout }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState("");
   
+  // Styling state
+  const [noteStyling, setNoteStyling] = useState({
+    fontSize: null,
+    fontFamily: null,
+    lineHeight: null
+  });
+  
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [showSummaryTab, setShowSummaryTab] = useState(false);
   const [summaryText, setSummaryText] = useState("");
@@ -181,6 +188,12 @@ export default function MainPage({ user, onLogout }) {
         .catch(() => {});
     }
     setNoteContent(note.markdown);
+    // Load styling preferences from note
+    setNoteStyling({
+      fontSize: note.font_size || null,
+      fontFamily: note.font_family || null,
+      lineHeight: note.line_height || null
+    });
     setActiveContent({ type: 'note', id: note.id });
     setShowSummaryTab(false); // hide previous summary by default when switching notes
     setSummaryText("");
@@ -366,7 +379,10 @@ export default function MainPage({ user, onLogout }) {
           quiz_ids: [],
           flashcard_ids: [],
           chat_id: null,
-          is_archived: false
+          is_archived: false,
+          font_size: noteStyling.fontSize,
+          font_family: noteStyling.fontFamily,
+          line_height: noteStyling.lineHeight
         };
         const newNote = await createNote(noteData);
         setCurrentNote(newNote);
@@ -394,7 +410,10 @@ export default function MainPage({ user, onLogout }) {
         // Update existing saved note
         const updatedNote = await updateNote(currentNote.id, {
           markdown: contentToSave,
-          title: currentNote.title
+          title: currentNote.title,
+          font_size: noteStyling.fontSize,
+          font_family: noteStyling.fontFamily,
+          line_height: noteStyling.lineHeight
         });
         setCurrentNote(updatedNote);
         setSaveStatus("Saved successfully!");
@@ -413,7 +432,10 @@ export default function MainPage({ user, onLogout }) {
           quiz_ids: [],
           flashcard_ids: [],
           chat_id: null,
-          is_archived: false
+          is_archived: false,
+          font_size: noteStyling.fontSize,
+          font_family: noteStyling.fontFamily,
+          line_height: noteStyling.lineHeight
         };
         const newNote = await createNote(noteData);
         setCurrentNote(newNote);
@@ -830,8 +852,12 @@ export default function MainPage({ user, onLogout }) {
                       key={currentNote?.id || "new-note"}
                       className="h-full font-sans text-slate-800"
                       initialMarkdown={noteContent}
+                      initialFontSize={noteStyling.fontSize}
+                      initialFontFamily={noteStyling.fontFamily}
+                      initialLineHeight={noteStyling.lineHeight}
                       onContentChange={handleContentChange}
                       onSave={handleSave}
+                      onStylingChange={(styling) => setNoteStyling(styling)}
                     />
                   </div>
                 </div>
