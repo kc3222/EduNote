@@ -56,11 +56,11 @@ class NoteDAO:
         try:
             note_id = str(uuid.uuid4())
             cur.execute("""
-                INSERT INTO note (id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at, summary_json, summary_updated_at
+                INSERT INTO note (id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, font_size, font_family, line_height)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at, summary_json, summary_updated_at, font_size, font_family, line_height
             """, (note_id, note.owner_id, note.document_id, note.title, note.markdown, 
-                  note.quiz_ids, note.flashcard_ids, note.chat_id, note.is_archived))
+                  note.quiz_ids, note.flashcard_ids, note.chat_id, note.is_archived, note.font_size, note.font_family, note.line_height))
             
             result = cur.fetchone()
             conn.commit()
@@ -243,6 +243,18 @@ class NoteDAO:
                 update_fields.append("is_archived = %s")
                 params.append(note_update.is_archived)
             
+            if note_update.font_size is not None:
+                update_fields.append("font_size = %s")
+                params.append(note_update.font_size)
+            
+            if note_update.font_family is not None:
+                update_fields.append("font_family = %s")
+                params.append(note_update.font_family)
+            
+            if note_update.line_height is not None:
+                update_fields.append("line_height = %s")
+                params.append(note_update.line_height)
+            
             if not update_fields:
                 raise ValueError("No fields to update")
             
@@ -257,7 +269,7 @@ class NoteDAO:
                 UPDATE note 
                 SET {', '.join(update_fields)}
                 WHERE id = %s
-                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at, summary_json, summary_updated_at
+                RETURNING id, owner_id, document_id, title, markdown, quiz_ids, flashcard_ids, chat_id, is_archived, created_at, updated_at, summary_json, summary_updated_at, font_size, font_family, line_height
             """
             
             cur.execute(query, params)
@@ -411,7 +423,8 @@ class NoteDAO:
                     id, owner_id, title, markdown, document_id,
                     quiz_ids, flashcard_ids, chat_id, is_archived,
                     created_at, updated_at,
-                    summary_json, summary_updated_at
+                    summary_json, summary_updated_at,
+                    font_size, font_family, line_height
                 FROM note
                 WHERE id = %s
                 """,
@@ -463,7 +476,8 @@ class NoteDAO:
                     id, owner_id, title, markdown, document_id,
                     quiz_ids, flashcard_ids, chat_id, is_archived,
                     created_at, updated_at,
-                    summary_json, summary_updated_at
+                    summary_json, summary_updated_at,
+                    font_size, font_family, line_height
                 FROM note
                 {where_sql}
                 ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST

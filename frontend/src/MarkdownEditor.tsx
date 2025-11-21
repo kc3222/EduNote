@@ -17,6 +17,10 @@ type MarkdownEditorProps = {
   style?: React.CSSProperties;
   onContentChange?: (content: string) => void;   // markdown string
   onSave?: (content?: string) => void;           // markdown string (optional)
+  initialFontSize?: string;
+  initialFontFamily?: string;
+  initialLineHeight?: string;
+  onStylingChange?: (styling: { fontSize: string; fontFamily: string; lineHeight: string }) => void;
 };
 
 type InnerEditorProps = MarkdownEditorProps & {
@@ -119,11 +123,34 @@ function InnerEditor({
 }
 
 export default function MarkdownEditor(props: MarkdownEditorProps) {
-  const { className, style } = props;
-  const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
-  const [fontFamily, setFontFamily] = useState(DEFAULT_FONT_FAMILY);
-  const [lineHeight, setLineHeight] = useState(DEFAULT_LINE_HEIGHT);
+  const { className, style, initialFontSize, initialFontFamily, initialLineHeight, onStylingChange } = props;
+  const [fontSize, setFontSize] = useState(initialFontSize || DEFAULT_FONT_SIZE);
+  const [fontFamily, setFontFamily] = useState(initialFontFamily || DEFAULT_FONT_FAMILY);
+  const [lineHeight, setLineHeight] = useState(initialLineHeight || DEFAULT_LINE_HEIGHT);
   const editorRef = useRef<Editor | null>(null);
+
+  // Update state when initial props change
+  useEffect(() => {
+    if (initialFontSize) setFontSize(initialFontSize);
+    if (initialFontFamily) setFontFamily(initialFontFamily);
+    if (initialLineHeight) setLineHeight(initialLineHeight);
+  }, [initialFontSize, initialFontFamily, initialLineHeight]);
+
+  // Notify parent when styling changes
+  const handleFontSizeChange = (newSize: string) => {
+    setFontSize(newSize);
+    onStylingChange?.({ fontSize: newSize, fontFamily, lineHeight });
+  };
+
+  const handleFontFamilyChange = (newFamily: string) => {
+    setFontFamily(newFamily);
+    onStylingChange?.({ fontSize, fontFamily: newFamily, lineHeight });
+  };
+
+  const handleLineHeightChange = (newHeight: string) => {
+    setLineHeight(newHeight);
+    onStylingChange?.({ fontSize, fontFamily, lineHeight: newHeight });
+  };
 
   // CSS variables for editor-wide formatting
   const editorVariablesStyle = {
@@ -149,7 +176,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
             id="font-size-select"
             className="markdown-toolbar__select"
             value={fontSize}
-            onChange={(e) => setFontSize(e.target.value)}
+            onChange={(e) => handleFontSizeChange(e.target.value)}
           >
             {FONT_SIZE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -164,7 +191,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
             id="font-family-select"
             className="markdown-toolbar__select"
             value={fontFamily}
-            onChange={(e) => setFontFamily(e.target.value)}
+            onChange={(e) => handleFontFamilyChange(e.target.value)}
           >
             {FONT_FAMILY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -179,7 +206,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
             id="line-height-select"
             className="markdown-toolbar__select"
             value={lineHeight}
-            onChange={(e) => setLineHeight(e.target.value)}
+            onChange={(e) => handleLineHeightChange(e.target.value)}
           >
             {LINE_HEIGHT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
