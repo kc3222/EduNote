@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { login, me, logout } from "./api";
 
 export default function Login({ onLogin, onSwitchToSignup }) {
-  const [email, setEmail] = useState("demo@user.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // Add loading state
   const [err, setErr] = useState("");
@@ -94,9 +94,6 @@ export default function Login({ onLogin, onSwitchToSignup }) {
         {err && <div style={styles.error}>{err}</div>}
         <button style={styles.button} type="submit">Log in</button>
         <button style={styles.signupButton} type="button" onClick={() => onSwitchToSignup?.()}>Sign up</button>
-        <p style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-          Try <code>demo@user.com</code> / <code>password123</code>
-        </p>
       </form>
     </div>
   );
