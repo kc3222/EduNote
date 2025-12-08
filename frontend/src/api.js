@@ -1,43 +1,52 @@
+// ---- AUTH API ----
+
 export async function login(email, password) {
-    const res = await fetch(`/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include", // send/receive cookie
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Login failed");
-    }
-    return res.json();
+  const res = await fetch(`/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // send/receive cookie
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Login failed");
   }
-  
-  export async function me() {
-    const res = await fetch(`/auth/me`, { credentials: "include" });
-    return res.json();
-  }
-  
-  export async function logout() {
-    const res = await fetch(`/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    return res.json();
-  }
+  return res.json();
+}
+
+export async function me() {
+  const res = await fetch(`/auth/me`, { credentials: "include" });
+  return res.json();
+}
+
+export async function logout() {
+  const res = await fetch(`/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return res.json();
+}
 
 export async function signup(email, password) {
-    const res = await fetch(`/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include", // send/receive cookie
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Signup failed");
-    }
-    return res.json();
+  const res = await fetch(`/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // send/receive cookie
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Signup failed");
   }
+  return res.json();
+}
+
+// ---- BASE URLS ----
+
+const NOTES_API_BASE =
+  import.meta.env.VITE_NOTES_API_BASE || "http://localhost:8001";
+
+// ---- NOTES API ----
 
 export async function createNote(payload) {
   const res = await fetch(`${NOTES_API_BASE}/notes`, {
@@ -60,7 +69,7 @@ export async function updateNote(id, payload) {
 }
 
 export async function getNote(noteId) {
-  const res = await fetch(`/notes/${noteId}`);
+  const res = await fetch(`${NOTES_API_BASE}/notes/${noteId}`);
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.detail || "Failed to get note");
@@ -69,7 +78,9 @@ export async function getNote(noteId) {
 }
 
 export async function getUserNotes(ownerId) {
-  const res = await fetch(`${NOTES_API_BASE}/notes?owner_id=${encodeURIComponent(ownerId)}`);
+  const res = await fetch(
+    `${NOTES_API_BASE}/notes?owner_id=${encodeURIComponent(ownerId)}`
+  );
   if (!res.ok) throw new Error(`Failed to fetch notes (${res.status})`);
   return res.json();
 }
@@ -85,11 +96,18 @@ export async function deleteNote(noteId) {
   return res.json();
 }
 
+/**
+ * On-the-fly summary (does NOT persist) – only if you still use this.
+ * Backend: POST /notes/{note_id}/summarize
+ */
 export async function summarizeNote(noteId) {
-  const res = await fetch(`/notes/${noteId}/summarize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-  });
+  const res = await fetch(
+    `${NOTES_API_BASE}/notes/${noteId}/summarize`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.detail || "Failed to summarize note");
@@ -97,15 +115,36 @@ export async function summarizeNote(noteId) {
   return res.json();
 }
 
-const NOTES_API_BASE = import.meta.env.VITE_NOTES_API_BASE || "http://localhost:8001";
-
+/**
+ * Persisted summary – matches PUT /notes/{id}/summary in notes service.
+ */
 export async function summarizeNotePersist(id) {
-  const res = await fetch(`${NOTES_API_BASE}/notes/${id}/summary`, { method: "PUT" });
+  const res = await fetch(`${NOTES_API_BASE}/notes/${id}/summary`, {
+    method: "PUT",
+  });
   if (!res.ok) throw new Error(`Summarize failed (${res.status})`);
   return res.json();
 }
 
-// Document API functions
+/**
+ * Generate and persist quizzes for a note.
+ * Backend: POST /notes/{note_id}/quizzes
+ */
+export async function generateNoteQuizzes(noteId) {
+  const res = await fetch(`${NOTES_API_BASE}/notes/${noteId}/quizzes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to generate quizzes");
+  }
+  return res.json();
+}
+
+// ---- DOCUMENTS API ----
+// (Assuming you proxy /documents to the document service)
+
 export async function uploadDocument(formData) {
   const res = await fetch(`/documents/upload`, {
     method: "POST",

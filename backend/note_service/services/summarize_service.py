@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional
 
-from note_service.AI.gemini_client import GeminiClient
-from note_service.daos.note_dao import NoteDAO
+from note_service.services.ai_service import AIService
 from note_service.services.typing_helpers import SummaryDict
 from note_service.models.models import NoteResponse
 
@@ -10,40 +9,58 @@ _JSON_SCHEMA_HINT: Dict[str, Any] = {
     "type": "object",
     "required": ["title", "tldr", "key_points"],
     "properties": {
-        "title": {"type": "string", "description": "Short human-readable title for the note"},
-        "tldr": {"type": "string", "description": "One-paragraph summary (<= 3 sentences)"},
+        "title": {
+            "type": "string",
+            "description": "Short human-readable title for the note",
+        },
+        "tldr": {
+            "type": "string",
+            "description": "One-paragraph summary (<= 3 sentences)",
+        },
         "key_points": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "3-7 bullet points with the most important ideas"
+            "description": "3-7 bullet points with the most important ideas",
         },
         "action_items": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "Explicit action items with verbs"
+            "description": "Explicit action items with verbs",
         },
         "questions": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "Open questions / follow-ups"
+            "description": "Open questions / follow-ups",
         },
         "keywords": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "5-12 topic keywords"
-        }
+            "description": "5-12 topic keywords",
+        },
     },
-    "additionalProperties": False
+    "additionalProperties": False,
 }
 
 
 class SummarizeService:
-    def __init__(self, gemini: Optional[GeminiClient] = None):
-        self.gemini = gemini or GeminiClient(model="gemini-2.5-flash")
+    """
+    Note-specific summarization service.
+
+    - Uses AIService/Gemini under the hood.
+    - Knows how to build the prompt and normalize the JSON.
+    - Optionally persists the summary back to the 'note' table.
+    """
+
+    def __init__(self, ai: Optional[AIService] = None) -> None:
+        self.ai = ai or AIService()
 
     def summarize_note(self, note: NoteResponse) -> SummaryDict:
+        """
+        Build a structured summary for a NoteResponse (no persistence).
+        """
         title_hint = (note.title or "").strip()
         body = (note.markdown or "").strip()
+
         prompt = f"""
             You will receive note content (Markdown). Create a structured summary JSON with keys:
             - "title" (string)
@@ -66,35 +83,43 @@ class SummarizeService:
             ---
         """
 
-        data = self.gemini.generate_json(prompt, schema_hint=_JSON_SCHEMA_HINT, temperature=0.2)
-
-        # Normalize + type-safety
+        data = self.ai.generate_json(
+            prompt,
+            schema_hint=_JSON_SCHEMA_HINT,
+            temperature=0.2,
+        )
         return _normalize_summary_dict(data)
 
-    def summarize_and_persist(self, note_id: str):
+    def summarize_and_persist(self, note_id: str) -> SummaryDict:
         """
         Compute summary for note_id and persist to DB (summary_json + summary_updated_at).
         Returns the structured summary dict.
+
+        - Uses NoteService for fetching.
+        - Uses DAO helper if available, otherwise falls back to direct SQL UPDATE.
         """
-        # Reuse the NoteService instead of a raw DAO so we don't depend on non-existent DAO methods.
-        from note_service.services.note_service import NoteService
+        from note_service.services.note_service import NoteService  # local import to avoid cycles
         import json
 
         svc = NoteService()
-
         note = svc.get_note(note_id)
         if not note:
             raise ValueError(f"Note {note_id} not found")
 
         summary = self.summarize_note(note)
 
-        # Persist via DAO helper
-        if not hasattr(svc, "dao") or not hasattr(svc.dao, "update_summary"):
-            # Fallback: do a minimal in-place SQL if DAO helper is missing
-            from note_service.db import get_db_cursor  # adjust import if your DB util is elsewhere
+        # Preferred path: use DAO helper if present
+        if hasattr(svc, "dao") and hasattr(svc.dao, "update_summary"):
+            svc.dao.update_summary(note_id, json.dumps(summary))
+        else:
+            # Fallback: direct SQL UPDATE
+            # IMPORTANT: adjust this import to your actual DB helper module.
+            # If your DB helper is `note_service.database`, change accordingly.
+            from note_service.db import get_db_cursor  # type: ignore
+
             conn, cur = get_db_cursor()
             try:
-                # If you're on SQLite or TEXT column, drop ::jsonb
+                # If using PostgreSQL and summary_json is jsonb:
                 cur.execute(
                     """
                     UPDATE note
@@ -108,14 +133,15 @@ class SummarizeService:
             finally:
                 cur.close()
                 conn.close()
-        else:
-            # Preferred path if the helper exists
-            svc.dao.update_summary(note_id, json.dumps(summary))
 
         return summary
 
 
 def _normalize_summary_dict(d: Dict[str, Any]) -> SummaryDict:
+    """
+    Normalize the raw dict from the LLM into a strongly-typed SummaryDict
+    with default values and list coercion.
+    """
     title = d.get("title") or ""
     tldr = d.get("tldr") or ""
     key_points = d.get("key_points") or []
@@ -123,7 +149,7 @@ def _normalize_summary_dict(d: Dict[str, Any]) -> SummaryDict:
     questions = d.get("questions") or []
     keywords = d.get("keywords") or []
 
-    def _as_list(x):
+    def _as_list(x: Any) -> list:
         return x if isinstance(x, list) else []
 
     return {

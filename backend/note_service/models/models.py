@@ -47,3 +47,5 @@ class NoteResponse(BaseModel):
     font_size: Optional[str] = None
     font_family: Optional[str] = None
     line_height: Optional[str] = None
+    quiz_json: Optional[dict] = None
+    quiz_updated_at: Optional[datetime] = None

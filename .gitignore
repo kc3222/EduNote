@@ -1,32 +1,51 @@
-.DS_Store
-*.pyc
-*.pyo
-*.pyd
-*.pyw
-*.pyz
-*.pywz
-*.pyzw
-*.pyz
-.env
-
-# Run scripts (local environment specific)
-run.bat
-start_simple.bat
-run_*.bat
-*.ps1
-
-# Uploaded files
-backend/document_service/uploads/
-
-# Node modules
-node_modules/
+# Logs
+logs
+*.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Python cache
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Python virtual environments
+venv/
+.env/
+.venv/
+ENV/
+env.bak/
+
+# Node modules / build files
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Mac / OS files
+.DS_Store
+
+# Editor / IDE configs
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Cache files
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*.pytest_cache/
+.cache/
 
-# Environment files
-.env.local
-.env.production
+# Temporary files
+*.tmp
+*.temp

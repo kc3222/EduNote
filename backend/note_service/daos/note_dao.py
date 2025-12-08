@@ -424,7 +424,7 @@ class NoteDAO:
                     quiz_ids, flashcard_ids, chat_id, is_archived,
                     created_at, updated_at,
                     summary_json, summary_updated_at,
-                    font_size, font_family, line_height
+                    font_size, font_family, line_height, quiz_json, quiz_updated_at
                 FROM note
                 WHERE id = %s
                 """,
@@ -477,7 +477,7 @@ class NoteDAO:
                     quiz_ids, flashcard_ids, chat_id, is_archived,
                     created_at, updated_at,
                     summary_json, summary_updated_at,
-                    font_size, font_family, line_height
+                    font_size, font_family, line_height, quiz_json, quiz_updated_at
                 FROM note
                 {where_sql}
                 ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import MarkdownEditor from "./MarkdownEditor";
 import { Search, Upload, Save, Eye, Plus, ChevronLeft, ChevronRight, FileText, ListChecks, Layers, HelpCircle, LogOut, NotebookPen, Edit3, BookOpen, MessageCircle, ChevronDown, ChevronRight as ChevronRightIcon, X, Trash2 } from "lucide-react";
 import EduNoteIcon from "./assets/EduNoteIcon.jpg";
-import { createNote, updateNote, getUserNotes, getUserDocuments, summarizeNotePersist, deleteNote } from "./api";
+import { createNote, updateNote, getUserNotes, getUserDocuments, summarizeNotePersist, deleteNote, generateNoteQuizzes, } from "./api";
 import CreateFlashcardsPage from "./CreateFlashcardsPage";
 import Chat from "./Chat";
 import DocumentUpload from "./components/DocumentUpload";
@@ -23,6 +23,7 @@ export default function MainPage({ user, onLogout }) {
   const [notesError, setNotesError] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState("");
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   
   // Styling state
   const [noteStyling, setNoteStyling] = useState({
@@ -111,36 +112,52 @@ export default function MainPage({ user, onLogout }) {
 
   // Transform notes data into lectures structure
   const transformNotesToLectures = (notes) => {
-    // Group notes by document_id or create individual lectures
     const lectureMap = new Map();
-    
+
     notes.forEach((note) => {
       const lectureId = note.document_id || note.id;
-      
+
+      // Always derive quizzes from quiz_json only
+      const quizzes = [];
+      if (note.quiz_json) {
+        // Use the note's UUID as the quiz identifier
+        quizzes.push({
+          id: note.id,
+          title: `Quiz: ${note.title}`,
+        });
+      }
+
       if (!lectureMap.has(lectureId)) {
         lectureMap.set(lectureId, {
           id: lectureId,
           title: note.title,
           notes: [],
-          quizzes: note.quiz_ids?.map((id, index) => ({
-            id: id,
-            title: `Quiz ${index + 1}: ${note.title}`
-          })) || [],
-          flashcards: note.flashcard_ids?.map((id, index) => ({
-            id: id,
-            title: `Flashcards: ${note.title}`
-          })) || [],
-          summary: note.chat_id ? [{
-            id: note.chat_id,
-            title: `Summary: ${note.title}`
-          }] : []
+          quizzes: [],
+          flashcards:
+            note.flashcard_ids?.map((id, index) => ({
+              id,
+              title: `Flashcards: ${note.title}`,
+            })) || [],
+          summary: note.chat_id
+            ? [
+                {
+                  id: note.chat_id,
+                  title: `Summary: ${note.title}`,
+                },
+              ]
+            : [],
         });
       }
-      
+
       const lecture = lectureMap.get(lectureId);
+
+      if (quizzes.length) {
+        lecture.quizzes = [...lecture.quizzes, ...quizzes];
+      }
+
       lecture.notes.push(note);
     });
-    
+
     return Array.from(lectureMap.values());
   };
 
@@ -151,8 +168,8 @@ export default function MainPage({ user, onLogout }) {
     }));
   };
 
-  const handleQuizClick = (lectureId, quizId) => {
-    setActiveContent({ lectureId, type: 'quiz', id: quizId });
+  const handleQuizClick = (lectureId, noteId) => {
+    setActiveContent({ lectureId, type: "quiz", noteId });
   };
 
   const handleFlashcardClick = (lectureId, cardId) => {
@@ -214,6 +231,13 @@ export default function MainPage({ user, onLogout }) {
     setShowSummaryTab(false); // hide previous summary by default when switching notes
     setSummaryText("");
     setSummaryError("");
+
+    if (note.document_id && documents?.length) {
+      const doc = documents.find((d) => d.id === note.document_id);
+      if (doc) {
+        setSelectedDocument(doc);
+      }
+    }
   };
 
   // Helper function to check if array has content
@@ -368,6 +392,33 @@ export default function MainPage({ user, onLogout }) {
       setSummaryError(e.message || "Summarize failed.");
     } finally {
       setIsSummarizing(false);
+    }
+  };
+
+  const handleGenerateQuizzes = async () => {
+    // Guard: must have a saved note
+    if (!currentNote?.id || currentNote.isTemporary) {
+      setSaveStatus("Error: Save the note first before generating quizzes.");
+      return;
+    }
+
+    try {
+      setIsGeneratingQuiz(true);
+      setSaveStatus("Generating quiz…");
+
+      await generateNoteQuizzes(currentNote.id);
+
+      const updatedNotes = await getUserNotes(user.id);
+      const lecturesData = transformNotesToLectures(updatedNotes);
+      setLectures(lecturesData);
+
+      setSaveStatus("Quiz generated and saved with this note.");
+    } catch (err) {
+      console.error("Failed to generate quizzes:", err);
+      setSaveStatus(`Error: ${err.message || "Failed to generate quizzes."}`);
+    } finally {
+      setIsGeneratingQuiz(false);
+      setTimeout(() => setSaveStatus(""), 3000);
     }
   };
 
@@ -673,6 +724,15 @@ export default function MainPage({ user, onLogout }) {
       onBack={() => setActiveContent(null)}
     />
   );
+  }
+
+  if (activeContent?.type === "quiz") {
+    return (
+      <QuizPage
+        noteId={activeContent.noteId}
+        onBack={() => setActiveContent(null)}
+      />
+    );
   }
 
   return (
@@ -1059,7 +1119,8 @@ export default function MainPage({ user, onLogout }) {
                 </button>
                 <RailButton
                   icon={<FileText className="h-4 w-4" />}
-                  label={isSummarizing ? "Summary" : "Summary"}
+                  //label={isSummarizing ? "Summary" : "Summary"}
+                  label={"Summary"}
                   showLabel={rightOpen}
                   onClick={() => {
                     // If we already have saved/cached summary, just open the tab.
@@ -1072,7 +1133,12 @@ export default function MainPage({ user, onLogout }) {
                     }
                   }}
                 />
-                <RailButton icon={<ListChecks className="h-4 w-4" />} label="Quizzes" showLabel={rightOpen} />
+                <RailButton
+                  icon={<ListChecks className="h-4 w-4" />}
+                  label={isGeneratingQuiz ? "Quizzes…" : "Quizzes"}
+                  showLabel={rightOpen}
+                  onClick={handleGenerateQuizzes}
+                />
                 <RailButton icon={<Layers className="h-4 w-4" />} label="Flashcards" showLabel={rightOpen} onClick={() => setActiveContent({ type: "flashcards", lectureId: null, id: null })}/>
                 <RailButton icon={<MessageCircle className="h-4 w-4" />} label="Chat" showLabel={rightOpen} onClick={() => setActiveContent({ type: "chat" })}/>
                 {/* Chat panel docked */}
@@ -1218,5 +1284,228 @@ function RailButton({ icon, label, showLabel, onClick }) {
       </div>
       {showLabel && <span>{label}</span>}
     </button>
+  );
+}
+
+function QuizPage({ noteId, onBack }) {
+  const [quiz, setQuiz] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState("");
+
+  // ---------- parsing helpers ----------
+
+  // Parse either JSON or a Python/JS-like literal string
+  function parseStructuredString(str) {
+    if (typeof str !== "string") return str;
+
+    // 1) Try JSON.parse directly
+    try {
+      return JSON.parse(str);
+    } catch (_) {
+      // ignore
+    }
+
+    // 2) Try evaluating as a JS object literal (Python repr is close enough)
+    //    Replace None/True/False so JS understands them.
+    try {
+      const jsLike = str
+        .replace(/\bNone\b/g, "null")
+        .replace(/\bTrue\b/g, "true")
+        .replace(/\bFalse\b/g, "false");
+
+      // Limited eval of our own backend’s data
+      // eslint-disable-next-line no-new-func
+      const value = Function('"use strict"; return (' + jsLike + ");")();
+      return value;
+    } catch (e) {
+      console.error("Failed to parse quiz string:", str, e);
+      return str; // fallback
+    }
+  }
+
+  function normalizeQuestion(rawQ) {
+    let q = rawQ;
+
+    if (typeof q === "string") {
+      q = parseStructuredString(q);
+    }
+
+    if (!q || typeof q !== "object") {
+      // Last-resort fallback: treat whole thing as the question text
+      return {
+        id: undefined,
+        question: String(rawQ),
+        options: [],
+      };
+    }
+
+    return {
+      id: q.id ?? q.qid ?? undefined,
+      question: q.question ?? String(rawQ),
+      options: Array.isArray(q.options) ? q.options : [],
+      correct_option: q.correct_option,
+      explanation: q.explanation,
+      difficulty: q.difficulty,
+    };
+  }
+
+  function normalizeQuiz(raw) {
+    if (!raw) return null;
+
+    let qz = raw;
+
+    if (typeof qz === "string") {
+      qz = parseStructuredString(qz);
+    }
+
+    // Case 1: raw is already an array of questions
+    if (Array.isArray(qz)) {
+      return {
+        title: "Quiz",
+        questions: qz.map(normalizeQuestion),
+      };
+    }
+
+    // Case 2: object with questions field
+    if (typeof qz === "object") {
+      const questionsRaw =
+        qz.questions || qz.quiz || qz.items || [];
+
+      const questionsArray = Array.isArray(questionsRaw)
+        ? questionsRaw
+        : [questionsRaw];
+
+      return {
+        title: qz.title || qz.name || "Quiz",
+        questions: questionsArray.map(normalizeQuestion),
+      };
+    }
+
+    // Case 3: something else → treat as one big question
+    return {
+      title: "Quiz",
+      questions: [normalizeQuestion(qz)],
+    };
+  }
+
+  // ---------- data fetch ----------
+
+  React.useEffect(() => {
+    if (!noteId) return;
+
+    setLoading(true);
+    setError("");
+    setQuiz(null);
+
+    fetch(`http://localhost:8001/notes/${noteId}/quizzes`)
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(body.detail || `HTTP ${res.status}`);
+        }
+        return body;
+      })
+      .then((data) => {
+        // backend returns { note_id, quiz: <something> }
+        const rawQuiz = data.quiz ?? data.summary ?? data;
+        const normalized = normalizeQuiz(rawQuiz);
+        setQuiz(normalized);
+      })
+      .catch((err) => {
+        console.error("Failed to load quiz:", err);
+        setError(err.message || "Failed to load quiz.");
+      })
+      .finally(() => setLoading(false));
+  }, [noteId]);
+
+  // ---------- render ----------
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#F7FAFF] via-[#F4FBF7] to-[#F2FAFF] text-slate-700">
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
+        <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-2">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 shadow-sm"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+          <div className="text-sm font-medium text-slate-800">
+            Quiz Viewer
+          </div>
+          <div />
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-4">
+        {loading && (
+          <p className="text-sm text-slate-500 italic">Loading quiz…</p>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-600 mb-2">
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && !quiz && (
+          <p className="text-sm text-slate-500 italic">
+            No quiz found for this note.
+          </p>
+        )}
+
+        {quiz && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-semibold text-slate-800">
+              {quiz.title}
+            </h1>
+
+            {quiz.questions?.map((q, idx) => (
+              <div
+                key={q.id || idx}
+                className="rounded-xl border border-slate-200 p-5 shadow-sm bg-white"
+              >
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <p className="text-base font-semibold text-slate-800">
+                    {idx + 1}. {q.question}
+                  </p>
+                  {q.difficulty && (
+                    <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">
+                      {q.difficulty}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {q.options?.map((option, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 transition"
+                    >
+                      <span className="h-6 w-6 flex items-center justify-center rounded-full border border-slate-400 text-[10px] text-slate-700">
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      <span className="text-sm text-slate-700">
+                        {option}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {q.explanation && (
+                  <p className="mt-4 text-xs text-slate-500 border-t pt-3">
+                    <span className="font-semibold text-slate-600">
+                      Explanation:
+                    </span>{" "}
+                    {q.explanation}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
