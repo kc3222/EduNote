@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, File, X, Check, AlertCircle, FileText, Image } from 'lucide-react';
 
-export default function DocumentUpload({ user, onUploadComplete, onClose }) {
+export default function DocumentUpload({ user, noteId, onUploadComplete, onClose }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -73,6 +73,17 @@ export default function DocumentUpload({ user, onUploadComplete, onClose }) {
   };
 
   const uploadFiles = async () => {
+    if (!noteId) {
+      alert('Please select or create a note before uploading documents');
+      return;
+    }
+
+    // Check if noteId is a temporary ID (starts with "temp-")
+    if (noteId.startsWith('temp-')) {
+      alert('Please save the note first before uploading documents. Click "Save" to save the note.');
+      return;
+    }
+
     setUploading(true);
     const pendingFiles = uploadedFiles.filter(f => f.status === 'pending');
     const successfulUploads = []; // Track successful uploads
@@ -88,6 +99,7 @@ export default function DocumentUpload({ user, onUploadComplete, onClose }) {
         formData.append('file', fileItem.file);
         formData.append('title', fileItem.title);
         formData.append('owner_id', user.id);
+        formData.append('note_id', noteId);
         if (fileItem.description) {
           formData.append('description', fileItem.description);
         }
@@ -110,11 +122,13 @@ export default function DocumentUpload({ user, onUploadComplete, onClose }) {
           f.id === fileItem.id ? { ...f, status: 'success', progress: 100, documentId: result.id } : f
         ));
 
-        // Add to successful uploads array
+        // Add to successful uploads array with note_id from response
         successfulUploads.push({
           ...fileItem,
           documentId: result.id,
-          status: 'success'
+          noteId: result.note_id || noteId, // Include note_id from response
+          status: 'success',
+          document: result // Include full document object
         });
 
       } catch (error) {

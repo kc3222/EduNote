@@ -73,7 +73,7 @@ export default function MainPage({ user, onLogout }) {
     fetchNotes();
   }, [user?.id]);
 
-  // Fetch user documents on component mount
+  // Fetch documents for the current note
   useEffect(() => {
     const fetchDocuments = async () => {
       if (!user?.id) return;
@@ -81,17 +81,33 @@ export default function MainPage({ user, onLogout }) {
       setIsLoadingDocuments(true);
       
       try {
-        const docs = await getUserDocuments(user.id);
-        setDocuments(docs);
+        // If we have a current note (and it's not temporary), fetch documents for that note
+        if (currentNote?.id && !currentNote?.isTemporary && !currentNote.id.startsWith('temp-')) {
+          const response = await fetch(`/documents?note_id=${currentNote.id}`);
+          if (response.ok) {
+            const docs = await response.json();
+            console.log("Fetched documents for note:", currentNote.id, docs);
+            setDocuments(docs);
+          } else {
+            console.warn("Failed to fetch by note_id, using empty list");
+            setDocuments([]);
+          }
+        } else {
+          // Otherwise, fetch all documents for the user
+          const docs = await getUserDocuments(user.id);
+          console.log("Fetched all documents for user:", docs);
+          setDocuments(docs);
+        }
       } catch (error) {
         console.error("Failed to fetch documents:", error);
+        setDocuments([]); // Set empty array on error
       } finally {
         setIsLoadingDocuments(false);
       }
     };
 
     fetchDocuments();
-  }, [user?.id]);
+  }, [user?.id, currentNote?.id]);
 
   // Transform notes data into lectures structure
   const transformNotesToLectures = (notes) => {
@@ -388,6 +404,15 @@ export default function MainPage({ user, onLogout }) {
         setCurrentNote(newNote);
         setSaveStatus("Note created and saved!");
         
+        // Refresh documents for the newly saved note
+        try {
+          const docs = await fetch(`/documents?note_id=${newNote.id}`).then(res => res.json());
+          console.log("Refreshed documents after note save:", docs);
+          setDocuments(docs);
+        } catch (error) {
+          console.error("Failed to refresh documents after note save:", error);
+        }
+        
         // Replace temporary note in lectures list with saved note
         setLectures(prevLectures => {
           const updatedLectures = prevLectures.map(lecture => {
@@ -521,23 +546,94 @@ export default function MainPage({ user, onLogout }) {
   const handleUploadComplete = async (uploadedFiles) => {
     console.log("Upload completed! Files:", uploadedFiles);
     
+    if (!uploadedFiles || uploadedFiles.length === 0) {
+      console.warn("No files uploaded, closing modal");
+      setShowUploadModal(false);
+      return;
+    }
+    
+    // Get the note_id from the first uploaded file (they should all have the same note_id)
+    const uploadedNoteId = uploadedFiles[0]?.noteId || uploadedFiles[0]?.document?.note_id;
+    console.log("Uploaded note_id:", uploadedNoteId, "Current note_id:", currentNote?.id);
+    
     // Refresh documents list
     try {
-      const docs = await getUserDocuments(user.id);
-      console.log("Refreshed documents:", docs);
+      // Wait a bit for the database to commit
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      let docs = [];
+      
+      // Use the note_id from the uploaded files, or fall back to currentNote
+      const noteIdToFetch = uploadedNoteId || (currentNote?.id && !currentNote?.isTemporary && !currentNote.id.startsWith('temp-') ? currentNote.id : null);
+      
+      if (noteIdToFetch) {
+        try {
+          console.log(`Fetching documents for note_id: ${noteIdToFetch}`);
+          const response = await fetch(`/documents?note_id=${noteIdToFetch}`);
+          if (response.ok) {
+            docs = await response.json();
+            console.log(`Fetched ${docs.length} documents for note ${noteIdToFetch}:`, docs);
+          } else {
+            const errorText = await response.text();
+            console.warn("Failed to fetch by note_id:", response.status, errorText);
+            // Fallback to owner_id
+            docs = await getUserDocuments(user.id);
+            console.log(`Fallback: Fetched ${docs.length} documents for user:`, docs);
+          }
+        } catch (error) {
+          console.error("Error fetching by note_id:", error);
+          // Fallback to owner_id
+          docs = await getUserDocuments(user.id);
+          console.log(`Fallback: Fetched ${docs.length} documents for user:`, docs);
+        }
+      } else {
+        // Fallback to all user documents
+        console.log("No valid note_id, fetching all user documents");
+        docs = await getUserDocuments(user.id);
+        console.log(`Fetched ${docs.length} documents for user:`, docs);
+      }
+      
+      // Filter to only show documents for the current note if we have one
+      if (noteIdToFetch && docs.length > 0) {
+        const filteredDocs = docs.filter(doc => doc.note_id === noteIdToFetch);
+        if (filteredDocs.length > 0) {
+          docs = filteredDocs;
+          console.log(`Filtered to ${docs.length} documents for note ${noteIdToFetch}`);
+        }
+      }
+      
       setDocuments(docs);
       
       // If a PDF was uploaded, select it for viewing
-      const pdfUploads = uploadedFiles.filter(f => f.file.type === 'application/pdf');
+      const pdfUploads = uploadedFiles.filter(f => f.file?.type === 'application/pdf' || f.document?.content_type === 'application/pdf');
       if (pdfUploads.length > 0) {
-        const firstPdf = docs.find(doc => doc.content_type === 'application/pdf');
-        if (firstPdf) {
-          console.log("Auto-selecting PDF:", firstPdf);
-          setSelectedDocument(firstPdf);
+        // Try to find the uploaded PDF in the docs list
+        const uploadedDocIds = uploadedFiles.map(f => f.documentId || f.document?.id).filter(Boolean);
+        console.log("Looking for uploaded PDFs with IDs:", uploadedDocIds);
+        
+        const uploadedPdf = docs.find(doc => 
+          uploadedDocIds.includes(doc.id) && doc.content_type === 'application/pdf'
+        );
+        
+        if (uploadedPdf) {
+          console.log("Auto-selecting uploaded PDF:", uploadedPdf);
+          setSelectedDocument(uploadedPdf);
+        } else if (docs.length > 0) {
+          // Fallback: select first PDF in the list
+          const firstPdf = docs.find(doc => doc.content_type === 'application/pdf');
+          if (firstPdf) {
+            console.log("Auto-selecting first PDF in list:", firstPdf);
+            setSelectedDocument(firstPdf);
+          } else {
+            console.warn("No PDF found in documents list:", docs);
+          }
+        } else {
+          console.warn("PDFs were uploaded but no documents found in list. Uploaded IDs:", uploadedDocIds);
         }
       }
     } catch (error) {
       console.error("Failed to refresh documents:", error);
+      // Still close the modal even if refresh failed
     }
     
     setShowUploadModal(false);
@@ -995,6 +1091,7 @@ export default function MainPage({ user, onLogout }) {
       {showUploadModal && (
         <DocumentUpload
           user={user}
+          noteId={currentNote?.id}
           onUploadComplete={handleUploadComplete}
           onClose={() => setShowUploadModal(false)}
         />

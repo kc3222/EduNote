@@ -13,9 +13,9 @@ class DocumentService:
             with conn.cursor() as cursor:
                 document_id = str(uuid.uuid4())
                 cursor.execute("""
-                    INSERT INTO document (id, title, filename, file_path, file_size, content_type, owner_id, description)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id, title, filename, file_size, content_type, owner_id, description, created_at, updated_at
+                    INSERT INTO document (id, title, filename, file_path, file_size, content_type, owner_id, note_id, description)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id, title, filename, file_size, content_type, owner_id, note_id, description, created_at, updated_at
                 """, (
                     document_id,
                     document.title,
@@ -24,6 +24,7 @@ class DocumentService:
                     document.file_size,
                     document.content_type,
                     document.owner_id,
+                    document.note_id,
                     document.description
                 ))
                 
@@ -37,9 +38,10 @@ class DocumentService:
                     file_size=result[3],
                     content_type=result[4],
                     owner_id=result[5],
-                    description=result[6],
-                    created_at=result[7],
-                    updated_at=result[8]
+                    note_id=result[6],
+                    description=result[7],
+                    created_at=result[8],
+                    updated_at=result[9]
                 )
         except Exception as e:
             conn.rollback()
@@ -47,21 +49,28 @@ class DocumentService:
         finally:
             conn.close()
 
-    def get_documents(self, owner_id: Optional[str] = None) -> List[DocumentResponse]:
-        """Get all documents, optionally filtered by owner"""
+    def get_documents(self, owner_id: Optional[str] = None, note_id: Optional[str] = None) -> List[DocumentResponse]:
+        """Get all documents, optionally filtered by owner or note_id"""
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
-                if owner_id:
+                if note_id:
                     cursor.execute("""
-                        SELECT id, title, filename, file_size, content_type, owner_id, description, created_at, updated_at
+                        SELECT id, title, filename, file_size, content_type, owner_id, note_id, description, created_at, updated_at
+                        FROM document 
+                        WHERE note_id = %s
+                        ORDER BY created_at DESC
+                    """, (note_id,))
+                elif owner_id:
+                    cursor.execute("""
+                        SELECT id, title, filename, file_size, content_type, owner_id, note_id, description, created_at, updated_at
                         FROM document 
                         WHERE owner_id = %s
                         ORDER BY created_at DESC
                     """, (owner_id,))
                 else:
                     cursor.execute("""
-                        SELECT id, title, filename, file_size, content_type, owner_id, description, created_at, updated_at
+                        SELECT id, title, filename, file_size, content_type, owner_id, note_id, description, created_at, updated_at
                         FROM document 
                         ORDER BY created_at DESC
                     """)
@@ -76,9 +85,10 @@ class DocumentService:
                         file_size=row[3],
                         content_type=row[4],
                         owner_id=row[5],
-                        description=row[6],
-                        created_at=row[7],
-                        updated_at=row[8]
+                        note_id=row[6],
+                        description=row[7],
+                        created_at=row[8],
+                        updated_at=row[9]
                     )
                     for row in results
                 ]
@@ -93,7 +103,7 @@ class DocumentService:
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, title, filename, file_path, file_size, content_type, owner_id, description, created_at, updated_at
+                    SELECT id, title, filename, file_path, file_size, content_type, owner_id, note_id, description, created_at, updated_at
                     FROM document 
                     WHERE id = %s
                 """, (document_id,))
@@ -111,9 +121,10 @@ class DocumentService:
                     'file_size': result[4],
                     'content_type': result[5],
                     'owner_id': result[6],
-                    'description': result[7],
-                    'created_at': result[8],
-                    'updated_at': result[9]
+                    'note_id': result[7],
+                    'description': result[8],
+                    'created_at': result[9],
+                    'updated_at': result[10]
                 })()
         except Exception as e:
             raise Exception(f"Failed to get document: {str(e)}")
@@ -149,7 +160,7 @@ class DocumentService:
                     UPDATE document 
                     SET {', '.join(updates)}
                     WHERE id = %s
-                    RETURNING id, title, filename, file_size, content_type, owner_id, description, created_at, updated_at
+                    RETURNING id, title, filename, file_size, content_type, owner_id, note_id, description, created_at, updated_at
                 """
                 
                 cursor.execute(query, params)
@@ -167,9 +178,10 @@ class DocumentService:
                     file_size=result[3],
                     content_type=result[4],
                     owner_id=result[5],
-                    description=result[6],
-                    created_at=result[7],
-                    updated_at=result[8]
+                    note_id=result[6],
+                    description=result[7],
+                    created_at=result[8],
+                    updated_at=result[9]
                 )
         except Exception as e:
             conn.rollback()
