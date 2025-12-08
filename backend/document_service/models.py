@@ -10,6 +10,7 @@ class DocumentCreate(BaseModel):
     file_size: int
     content_type: str
     owner_id: str
+    note_id: str
     description: Optional[str] = None
 
 class DocumentUpdate(BaseModel):
@@ -23,6 +24,7 @@ class DocumentResponse(BaseModel):
     file_size: int
     content_type: str
     owner_id: str
+    note_id: str
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime

@@ -92,6 +92,15 @@ export async function getUserDocuments(ownerId) {
   return res.json();
 }
 
+export async function getNoteDocuments(noteId) {
+  const res = await fetch(`/documents?note_id=${noteId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to get note documents");
+  }
+  return res.json();
+}
+
 export async function getDocument(documentId) {
   const res = await fetch(`/documents/${documentId}`);
   if (!res.ok) {

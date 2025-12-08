@@ -47,6 +47,7 @@ async def upload_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
     owner_id: str = Form(...),
+    note_id: str = Form(...),
     description: Optional[str] = Form(None)
 ):
     """Upload a document file and create a database record"""
@@ -86,6 +87,7 @@ async def upload_document(
             file_size=file_size,
             content_type=file.content_type,
             owner_id=owner_id,
+            note_id=note_id,
             description=description
         )
         
@@ -98,9 +100,9 @@ async def upload_document(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/documents", response_model=List[DocumentResponse])
-async def get_documents(owner_id: Optional[str] = None):
-    """Get documents with optional filtering by owner"""
-    return document_service.get_documents(owner_id=owner_id)
+async def get_documents(owner_id: Optional[str] = None, note_id: Optional[str] = None):
+    """Get documents with optional filtering by owner or note_id"""
+    return document_service.get_documents(owner_id=owner_id, note_id=note_id)
 
 @app.get("/documents/{document_id}", response_model=DocumentResponse)
 async def get_document(document_id: str):
